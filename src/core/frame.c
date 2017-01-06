@@ -110,9 +110,6 @@ static MVMFrame * create_context_only(MVMThreadContext *tc, MVMStaticFrame *stat
         frame = MVM_gc_allocate_frame(tc);
     });
     });
-    
-    /* Copy thread context into the frame. */
-    frame->tc = tc;
 
     /* Set static frame. */
     MVM_ASSIGN_REF(tc, &(frame->header), frame->static_info, static_frame);
@@ -542,9 +539,6 @@ void MVM_frame_invoke(MVMThreadContext *tc, MVMStaticFrame *static_frame,
         frame->effective_handlers = static_frame->body.handlers;
     }
 
-    /* Copy thread context into the frame. */
-    frame->tc = tc;
-
     /* Set static frame. */
     frame->static_info = static_frame;
 
@@ -735,7 +729,6 @@ MVMFrame * MVM_frame_create_for_deopt(MVMThreadContext *tc, MVMStaticFrame *stat
     });
     frame->effective_bytecode       = static_frame->body.bytecode;
     frame->effective_handlers       = static_frame->body.handlers;
-    frame->tc                       = tc;
     MVM_ASSIGN_REF(tc, &(frame->header), frame->static_info, static_frame);
     MVM_ASSIGN_REF(tc, &(frame->header), frame->code_ref, code_ref);
     MVM_ASSIGN_REF(tc, &(frame->header), frame->outer, code_ref->body.outer);
@@ -793,7 +786,6 @@ static MVMuint64 remove_one_frame(MVMThreadContext *tc, MVMuint8 unwind) {
     else {
         returner->cur_args_callsite = NULL;
         returner->work = NULL;
-        returner->tc = NULL;
     }
 
     /* Switch back to the caller frame if there is one. */
