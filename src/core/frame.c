@@ -97,8 +97,6 @@ void MVM_frame_destroy(MVMThreadContext *tc, MVMFrame *frame) {
     }
     if (frame->env)
         MVM_fixed_size_free(tc, tc->instance->fsa, frame->allocd_env, frame->env);
-    if (frame->continuation_tags)
-        MVM_continuation_free_tags(tc, frame);
 }
 
 /* Creates a frame for usage as a context only, possibly forcing all of the
