@@ -494,6 +494,13 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 cur_op += 6;
                 goto NEXT;
             }
+            OP(swap_i): {
+                MVMint64 tmp = GET_REG(cur_op, 0).i64;
+                GET_REG(cur_op, 0).i64 = GET_REG(cur_op, 2).i64;
+                GET_REG(cur_op, 2).i64 = tmp;
+                cur_op += 4;
+                goto NEXT;
+            }
             OP(add_i):
                 GET_REG(cur_op, 0).i64 = GET_REG(cur_op, 2).i64 + GET_REG(cur_op, 4).i64;
                 cur_op += 6;
