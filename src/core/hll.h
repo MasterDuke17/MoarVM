@@ -5,6 +5,7 @@ struct MVMHLLConfig {
     MVMObject *int_box_type;
     MVMObject *num_box_type;
     MVMObject *str_box_type;
+    MVMObject *uint_box_type;
 
     /* The type to use for slurpy arrays. */
     MVMObject *slurpy_array_type;
@@ -22,6 +23,7 @@ struct MVMHLLConfig {
     MVMObject *foreign_type_int;
     MVMObject *foreign_type_num;
     MVMObject *foreign_type_str;
+    MVMObject *foreign_type_uint;
 
     /* HLL mapping transforms for array/hash/code. */
     MVMObject *foreign_transform_array;
@@ -47,15 +49,19 @@ struct MVMHLLConfig {
     MVMObject *int_lex_ref;
     MVMObject *num_lex_ref;
     MVMObject *str_lex_ref;
+    MVMObject *uint_lex_ref;
     MVMObject *int_attr_ref;
     MVMObject *num_attr_ref;
     MVMObject *str_attr_ref;
+    MVMObject *uint_attr_ref;
     MVMObject *int_pos_ref;
     MVMObject *num_pos_ref;
     MVMObject *str_pos_ref;
+    MVMObject *uint_pos_ref;
     MVMObject *int_multidim_ref;
     MVMObject *num_multidim_ref;
     MVMObject *str_multidim_ref;
+    MVMObject *uint_multidim_ref;
 
     /* Array of types to pass to compiler.c */
     MVMObject *mast_types;

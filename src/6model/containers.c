@@ -44,6 +44,10 @@ static void code_pair_fetch_s(MVMThreadContext *tc, MVMObject *cont, MVMRegister
     code_pair_fetch_internal(tc, cont, res, MVM_RETURN_STR);
 }
 
+static void code_pair_fetch_u(MVMThreadContext *tc, MVMObject *cont, MVMRegister *res) {
+    code_pair_fetch_internal(tc, cont, res, MVM_RETURN_INT);
+}
+
 static void code_pair_store_internal(MVMThreadContext *tc, MVMObject *cont, MVMRegister value, MVMCallsite *cs) {
     CodePairContData         *data = (CodePairContData *)STABLE(cont)->container_data;
     MVMObject                *code = MVM_frame_find_invokee(tc, data->store_code, NULL);
@@ -75,6 +79,12 @@ static void code_pair_store_s(MVMThreadContext *tc, MVMObject *cont, MVMString *
     MVMRegister r;
     r.s = value;
     code_pair_store_internal(tc, cont, r, MVM_callsite_get_common(tc, MVM_CALLSITE_ID_OBJ_STR));
+}
+
+static void code_pair_store_u(MVMThreadContext *tc, MVMObject *cont, MVMuint64 value) {
+    MVMRegister r;
+    r.u64 = value;
+    code_pair_store_internal(tc, cont, r, MVM_callsite_get_common(tc, MVM_CALLSITE_ID_OBJ_INT));
 }
 
 static void code_pair_gc_mark_data(MVMThreadContext *tc, MVMSTable *st, MVMGCWorklist *worklist) {
@@ -112,10 +122,12 @@ static const MVMContainerSpec code_pair_spec = {
     code_pair_fetch_i,
     code_pair_fetch_n,
     code_pair_fetch_s,
+    code_pair_fetch_u,
     code_pair_store,
     code_pair_store_i,
     code_pair_store_n,
     code_pair_store_s,
+    code_pair_store_u,
     code_pair_store,
     NULL, /* spesh */
     code_pair_gc_mark_data,
@@ -231,6 +243,28 @@ static void native_ref_fetch_s(MVMThreadContext *tc, MVMObject *cont, MVMRegiste
     }
 }
 
+static void native_ref_fetch_u(MVMThreadContext *tc, MVMObject *cont, MVMRegister *res) {
+    MVMNativeRefREPRData *repr_data = (MVMNativeRefREPRData *)STABLE(cont)->REPR_data;
+    if (repr_data->primitive_type != MVM_STORAGE_SPEC_BP_UINT)
+        MVM_exception_throw_adhoc(tc, "This container does not reference a native unsigned integer");
+    switch (repr_data->ref_kind) {
+        case MVM_NATIVEREF_LEX:
+            res->u64 = MVM_nativeref_read_lex_u(tc, cont);
+            break;
+        case MVM_NATIVEREF_ATTRIBUTE:
+            res->u64 = MVM_nativeref_read_attribute_u(tc, cont);
+            break;
+        case MVM_NATIVEREF_POSITIONAL:
+            res->u64 = MVM_nativeref_read_positional_u(tc, cont);
+            break;
+        case MVM_NATIVEREF_MULTIDIM:
+            res->u64 = MVM_nativeref_read_multidim_u(tc, cont);
+            break;
+        default:
+            MVM_exception_throw_adhoc(tc, "Unknown native uint reference kind");
+    }
+}
+
 static void native_ref_fetch(MVMThreadContext *tc, MVMObject *cont, MVMRegister *res) {
     MVMNativeRefREPRData *repr_data = (MVMNativeRefREPRData *)STABLE(cont)->REPR_data;
     MVMHLLConfig         *hll       = STABLE(cont)->hll_owner;
@@ -321,6 +355,28 @@ static void native_ref_store_s(MVMThreadContext *tc, MVMObject *cont, MVMString 
     }
 }
 
+static void native_ref_store_u(MVMThreadContext *tc, MVMObject *cont, MVMuint64 value) {
+    MVMNativeRefREPRData *repr_data = (MVMNativeRefREPRData *)STABLE(cont)->REPR_data;
+    if (repr_data->primitive_type != MVM_STORAGE_SPEC_BP_UINT)
+        MVM_exception_throw_adhoc(tc, "This container does not reference a native unsigned integer");
+    switch (repr_data->ref_kind) {
+        case MVM_NATIVEREF_LEX:
+            MVM_nativeref_write_lex_u(tc, cont, value);
+            break;
+        case MVM_NATIVEREF_ATTRIBUTE:
+            MVM_nativeref_write_attribute_u(tc, cont, value);
+            break;
+        case MVM_NATIVEREF_POSITIONAL:
+            MVM_nativeref_write_positional_u(tc, cont, value);
+            break;
+        case MVM_NATIVEREF_MULTIDIM:
+            MVM_nativeref_write_multidim_u(tc, cont, value);
+            break;
+        default:
+            MVM_exception_throw_adhoc(tc, "Unknown native uint reference kind");
+    }
+}
+
 static void native_ref_store(MVMThreadContext *tc, MVMObject *cont, MVMObject *obj) {
     MVMNativeRefREPRData *repr_data = (MVMNativeRefREPRData *)STABLE(cont)->REPR_data;
     switch (repr_data->primitive_type) {
@@ -356,10 +412,12 @@ static const MVMContainerSpec native_ref_spec = {
     native_ref_fetch_i,
     native_ref_fetch_n,
     native_ref_fetch_s,
+    native_ref_fetch_u,
     native_ref_store,
     native_ref_store_i,
     native_ref_store_n,
     native_ref_store_s,
+    native_ref_store_u,
     native_ref_store,
     NULL, /* spesh */
     NULL, /* gc_mark_data */
@@ -449,6 +507,9 @@ MVMint64 MVM_6model_container_iscont_n(MVMThreadContext *tc, MVMObject *cont) {
 MVMint64 MVM_6model_container_iscont_s(MVMThreadContext *tc, MVMObject *cont) {
     return get_container_primitive(tc, cont) == MVM_STORAGE_SPEC_BP_STR;
 }
+MVMint64 MVM_6model_container_iscont_u(MVMThreadContext *tc, MVMObject *cont) {
+    return get_container_primitive(tc, cont) == MVM_STORAGE_SPEC_BP_UINT;
+}
 
 /* If it's a container, do a fetch_i. Otherwise, try to unbox the received
  * value as a native integer. */
@@ -485,8 +546,7 @@ void MVM_6model_container_decont_s(MVMThreadContext *tc, MVMObject *cont, MVMReg
 void MVM_6model_container_decont_u(MVMThreadContext *tc, MVMObject *cont, MVMRegister *res) {
     const MVMContainerSpec *cs = STABLE(cont)->container_spec;
     if (cs && IS_CONCRETE(cont))
-        /* XXX We need a fetch_u at some point. */
-        cs->fetch_i(tc, cont, res);
+        cs->fetch_u(tc, cont, res);
     else
         res->u64 = MVM_repr_get_uint(tc, cont);
 }
@@ -514,6 +574,15 @@ void MVM_6model_container_assign_s(MVMThreadContext *tc, MVMObject *cont, MVMStr
     const MVMContainerSpec *cs = STABLE(cont)->container_spec;
     if (cs && IS_CONCRETE(cont))
         cs->store_s(tc, cont, value);
+    else
+        MVM_exception_throw_adhoc(tc, "Cannot assign to an immutable value");
+}
+
+/* Checks we have a container, and provided we do, assigns a uint into it. */
+void MVM_6model_container_assign_u(MVMThreadContext *tc, MVMObject *cont, MVMuint64 value) {
+    const MVMContainerSpec *cs = STABLE(cont)->container_spec;
+    if (cs && IS_CONCRETE(cont))
+        cs->store_u(tc, cont, value);
     else
         MVM_exception_throw_adhoc(tc, "Cannot assign to an immutable value");
 }

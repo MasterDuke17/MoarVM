@@ -14,6 +14,7 @@ struct MVMContainerSpec {
     void (*fetch_i) (MVMThreadContext *tc, MVMObject *cont, MVMRegister *res);
     void (*fetch_n) (MVMThreadContext *tc, MVMObject *cont, MVMRegister *res);
     void (*fetch_s) (MVMThreadContext *tc, MVMObject *cont, MVMRegister *res);
+    void (*fetch_u) (MVMThreadContext *tc, MVMObject *cont, MVMRegister *res);
 
     /* Stores a value in a container. Used for assignment. */
     void (*store) (MVMThreadContext *tc, MVMObject *cont, MVMObject *obj);
@@ -22,6 +23,7 @@ struct MVMContainerSpec {
     void (*store_i) (MVMThreadContext *tc, MVMObject *cont, MVMint64 value);
     void (*store_n) (MVMThreadContext *tc, MVMObject *cont, MVMnum64 value);
     void (*store_s) (MVMThreadContext *tc, MVMObject *cont, MVMString *value);
+    void (*store_u) (MVMThreadContext *tc, MVMObject *cont, MVMuint64 value);
 
     /* Stores a value in a container, without any checking of it (this
      * assumes an optimizer or something else already did it). Used for
@@ -80,6 +82,7 @@ MVMint64 MVM_6model_container_iscont_rw(MVMThreadContext *tc, MVMObject *cont);
 MVMint64 MVM_6model_container_iscont_i(MVMThreadContext *tc, MVMObject *cont);
 MVMint64 MVM_6model_container_iscont_n(MVMThreadContext *tc, MVMObject *cont);
 MVMint64 MVM_6model_container_iscont_s(MVMThreadContext *tc, MVMObject *cont);
+MVMint64 MVM_6model_container_iscont_u(MVMThreadContext *tc, MVMObject *cont);
 void MVM_6model_container_decont_i(MVMThreadContext *tc, MVMObject *cont, MVMRegister *res);
 void MVM_6model_container_decont_n(MVMThreadContext *tc, MVMObject *cont, MVMRegister *res);
 void MVM_6model_container_decont_s(MVMThreadContext *tc, MVMObject *cont, MVMRegister *res);
@@ -87,3 +90,4 @@ void MVM_6model_container_decont_u(MVMThreadContext *tc, MVMObject *cont, MVMReg
 void MVM_6model_container_assign_i(MVMThreadContext *tc, MVMObject *cont, MVMint64 value);
 void MVM_6model_container_assign_n(MVMThreadContext *tc, MVMObject *cont, MVMnum64 value);
 void MVM_6model_container_assign_s(MVMThreadContext *tc, MVMObject *cont, MVMString *value);
+void MVM_6model_container_assign_u(MVMThreadContext *tc, MVMObject *cont, MVMuint64 value);

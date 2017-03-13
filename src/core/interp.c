@@ -2589,6 +2589,10 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 GET_REG(cur_op, 0).o = cu->body.hll_config->str_box_type;
                 cur_op += 2;
                 goto NEXT;
+            OP(hllboxtype_u):
+                GET_REG(cur_op, 0).o = cu->body.hll_config->uint_box_type;
+                cur_op += 2;
+                goto NEXT;
             OP(hlllist):
                 GET_REG(cur_op, 0).o = cu->body.hll_config->slurpy_array_type;
                 cur_op += 2;
@@ -4448,6 +4452,11 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                     GET_REG(cur_op, 2).o);
                 cur_op += 4;
                 goto NEXT;
+            OP(iscont_u):
+                GET_REG(cur_op, 0).i64 = MVM_6model_container_iscont_u(tc,
+                    GET_REG(cur_op, 2).o);
+                cur_op += 4;
+                goto NEXT;
             OP(assign_i): {
                 MVMObject *cont  = GET_REG(cur_op, 0).o;
                 MVMint64   value = GET_REG(cur_op, 2).i64;
@@ -4467,6 +4476,13 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 MVMString *value = GET_REG(cur_op, 2).s;
                 cur_op += 4;
                 MVM_6model_container_assign_s(tc, cont, value);
+                goto NEXT;
+            }
+            OP(assign_u): {
+                MVMObject *cont  = GET_REG(cur_op, 0).o;
+                MVMuint64  value = GET_REG(cur_op, 2).u64;
+                cur_op += 4;
+                MVM_6model_container_assign_u(tc, cont, value);
                 goto NEXT;
             }
             OP(decont_i): {

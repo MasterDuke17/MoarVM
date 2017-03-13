@@ -86,6 +86,7 @@ struct MVMStorageSpec {
 #define MVM_STORAGE_SPEC_BP_INT         1
 #define MVM_STORAGE_SPEC_BP_NUM         2
 #define MVM_STORAGE_SPEC_BP_STR         3
+#define MVM_STORAGE_SPEC_BP_UINT        4
 
 /* can_box bit field values. */
 #define MVM_STORAGE_SPEC_CAN_BOX_INT    1
