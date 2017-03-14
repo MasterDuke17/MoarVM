@@ -4536,6 +4536,11 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                     MVM_cu_string(tc, cu, GET_UI32(cur_op, 2)));
                 cur_op += 6;
                 goto NEXT;
+            OP(getlexref_nu):
+                GET_REG(cur_op, 0).o = MVM_nativeref_lex_name_u(tc,
+                    MVM_cu_string(tc, cu, GET_UI32(cur_op, 2)));
+                cur_op += 6;
+                goto NEXT;
             OP(atposref_i):
                 GET_REG(cur_op, 0).o = MVM_nativeref_pos_i(tc,
                     GET_REG(cur_op, 2).o, GET_REG(cur_op, 4).i64);
