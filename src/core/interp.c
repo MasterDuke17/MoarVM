@@ -349,6 +349,11 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                     MVM_cu_string(tc, cu, GET_UI32(cur_op, 2)), MVM_reg_str)->s;
                 cur_op += 6;
                 goto NEXT;
+            OP(getlex_nu):
+                GET_REG(cur_op, 0).u64 = MVM_frame_find_lexical_by_name(tc,
+                    MVM_cu_string(tc, cu, GET_UI32(cur_op, 2)), MVM_reg_uint64)->u64;
+                cur_op += 6;
+                goto NEXT;
             OP(getlex_no): {
                 MVMRegister *found = MVM_frame_find_lexical_by_name(tc,
                     MVM_cu_string(tc, cu, GET_UI32(cur_op, 2)), MVM_reg_obj);

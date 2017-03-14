@@ -805,6 +805,7 @@ assign_u            r(obj) r(uint64) :invokish
 hllboxtype_u        w(obj) :pure
 iscont_u            w(int64) r(obj) :pure
 getlexref_nu        w(obj) str :pure :noinline
+getlex_nu           w(uint64) str :pure :noinline
 
 # Spesh ops. Naming convention: start with sp_. Must all be marked .s, which
 # is how the validator knows to exclude them.
