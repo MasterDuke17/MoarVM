@@ -1881,6 +1881,19 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 cur_op += 12;
                 goto NEXT;
             }
+            OP(bindattr_u): {
+                MVMObject *obj = GET_REG(cur_op, 0).o;
+				fprintf(stderr, "in bindattr_u\n");
+                if (!IS_CONCRETE(obj))
+                    MVM_exception_throw_adhoc(tc, "Cannot bind attributes in a %s type object", STABLE(obj)->debug_name);
+                REPR(obj)->attr_funcs.bind_attribute(tc,
+                    STABLE(obj), obj, OBJECT_BODY(obj),
+                    GET_REG(cur_op, 2).o, MVM_cu_string(tc, cu, GET_UI32(cur_op, 4)),
+                    GET_I16(cur_op, 10), GET_REG(cur_op, 8), MVM_reg_uint64);
+                MVM_SC_WB_OBJ(tc, obj);
+                cur_op += 12;
+                goto NEXT;
+            }
             OP(bindattr_n): {
                 MVMObject *obj = GET_REG(cur_op, 0).o;
                 if (!IS_CONCRETE(obj))
@@ -1925,6 +1938,18 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                     STABLE(obj), obj, OBJECT_BODY(obj),
                     GET_REG(cur_op, 2).o, GET_REG(cur_op, 4).s,
                     -1, GET_REG(cur_op, 6), MVM_reg_int64);
+                MVM_SC_WB_OBJ(tc, obj);
+                cur_op += 8;
+                goto NEXT;
+            }
+            OP(bindattrs_u): {
+                MVMObject *obj = GET_REG(cur_op, 0).o;
+                if (!IS_CONCRETE(obj))
+                    MVM_exception_throw_adhoc(tc, "Cannot bind attributes in a %s type object", STABLE(obj)->debug_name);
+                REPR(obj)->attr_funcs.bind_attribute(tc,
+                    STABLE(obj), obj, OBJECT_BODY(obj),
+                    GET_REG(cur_op, 2).o, GET_REG(cur_op, 4).s,
+                    -1, GET_REG(cur_op, 6), MVM_reg_uint64);
                 MVM_SC_WB_OBJ(tc, obj);
                 cur_op += 8;
                 goto NEXT;

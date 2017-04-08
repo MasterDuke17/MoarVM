@@ -171,10 +171,20 @@ static void native_ref_fetch_i(MVMThreadContext *tc, MVMObject *cont, MVMRegiste
         MVM_exception_throw_adhoc(tc, "This container does not reference a native integer");
     switch (repr_data->ref_kind) {
         case MVM_NATIVEREF_LEX:
+			if (repr_data->is_unsigned) { 
+				//fprintf(stderr, "unsigned native_ref_fetch_i lex\n");
+            res->u64 = MVM_nativeref_read_lex_i(tc, cont);
+			} else {
             res->i64 = MVM_nativeref_read_lex_i(tc, cont);
+			}
             break;
         case MVM_NATIVEREF_ATTRIBUTE:
+			if (repr_data->is_unsigned) { 
+				//fprintf(stderr, "unsigned native_ref_fetch_i attribute\n");
+            res->u64 = MVM_nativeref_read_attribute_i(tc, cont);
+			} else {
             res->i64 = MVM_nativeref_read_attribute_i(tc, cont);
+			}
             break;
         case MVM_NATIVEREF_POSITIONAL:
             res->i64 = MVM_nativeref_read_positional_i(tc, cont);
@@ -239,8 +249,15 @@ static void native_ref_fetch(MVMThreadContext *tc, MVMObject *cont, MVMRegister 
         hll = MVM_hll_current(tc);
     switch (repr_data->primitive_type) {
         case MVM_STORAGE_SPEC_BP_INT:
-            native_ref_fetch_i(tc, cont, &tmp);
-            res->o = MVM_repr_box_int(tc, hll->int_box_type, tmp.i64);
+            if (repr_data->is_unsigned) {
+				//fprintf(stderr, "unsigned native_ref_fetch\n");
+                native_ref_fetch_i(tc, cont, &tmp);
+                res->o = MVM_repr_box_uint(tc, hll->int_box_type, tmp.u64);
+            }
+            else {
+                native_ref_fetch_i(tc, cont, &tmp);
+                res->o = MVM_repr_box_int(tc, hll->int_box_type, tmp.i64);
+            }
             break;
         case MVM_STORAGE_SPEC_BP_NUM:
             native_ref_fetch_n(tc, cont, &tmp);
@@ -261,7 +278,11 @@ static void native_ref_store_i(MVMThreadContext *tc, MVMObject *cont, MVMint64 v
         MVM_exception_throw_adhoc(tc, "This container does not reference a native integer");
     switch (repr_data->ref_kind) {
         case MVM_NATIVEREF_LEX:
+            if (repr_data->is_unsigned) {
             MVM_nativeref_write_lex_i(tc, cont, value);
+			} else {
+            MVM_nativeref_write_lex_u(tc, cont, value);
+			}
             break;
         case MVM_NATIVEREF_ATTRIBUTE:
             MVM_nativeref_write_attribute_i(tc, cont, value);
@@ -325,7 +346,11 @@ static void native_ref_store(MVMThreadContext *tc, MVMObject *cont, MVMObject *o
     MVMNativeRefREPRData *repr_data = (MVMNativeRefREPRData *)STABLE(cont)->REPR_data;
     switch (repr_data->primitive_type) {
         case MVM_STORAGE_SPEC_BP_INT:
+            if (repr_data->is_unsigned) {
+            native_ref_store_i(tc, cont, MVM_repr_get_uint(tc, obj));
+			} else {
             native_ref_store_i(tc, cont, MVM_repr_get_int(tc, obj));
+			}
             break;
         case MVM_STORAGE_SPEC_BP_NUM:
             native_ref_store_n(tc, cont, MVM_repr_get_num(tc, obj));

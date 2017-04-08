@@ -8365,6 +8365,28 @@ static const MVMOpInfo MVM_op_infos[] = {
         { MVM_operand_write_reg | MVM_operand_int64, MVM_operand_read_reg | MVM_operand_str, MVM_operand_read_reg | MVM_operand_str, MVM_operand_read_reg | MVM_operand_int64 }
     },
     {
+        MVM_OP_bindattr_u,
+        "bindattr_u",
+        "  ",
+        5,
+        0,
+        0,
+        0,
+        0,
+        { MVM_operand_read_reg | MVM_operand_obj, MVM_operand_read_reg | MVM_operand_obj, MVM_operand_str, MVM_operand_read_reg | MVM_operand_uint64, MVM_operand_int16 }
+    },
+    {
+        MVM_OP_bindattrs_u,
+        "bindattrs_u",
+        "  ",
+        4,
+        0,
+        0,
+        0,
+        0,
+        { MVM_operand_read_reg | MVM_operand_obj, MVM_operand_read_reg | MVM_operand_obj, MVM_operand_read_reg | MVM_operand_str, MVM_operand_read_reg | MVM_operand_uint64 }
+    },
+    {
         MVM_OP_sp_log,
         "sp_log",
         ".s",
@@ -9033,7 +9055,7 @@ static const MVMOpInfo MVM_op_infos[] = {
     },
 };
 
-static const unsigned short MVM_op_counts = 822;
+static const unsigned short MVM_op_counts = 824;
 
 MVM_PUBLIC const MVMOpInfo * MVM_op_get_op(unsigned short op) {
     if (op >= MVM_op_counts)

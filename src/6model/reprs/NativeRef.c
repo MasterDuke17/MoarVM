@@ -33,8 +33,10 @@ static void serialize_repr_data(MVMThreadContext *tc, MVMSTable *st, MVMSerializ
     if (repr_data) {
         MVM_serialization_write_int(tc, writer, repr_data->primitive_type);
         MVM_serialization_write_int(tc, writer, repr_data->ref_kind);
+        MVM_serialization_write_int(tc, writer, repr_data->is_unsigned);
     }
     else {
+        MVM_serialization_write_int(tc, writer, 0);
         MVM_serialization_write_int(tc, writer, 0);
         MVM_serialization_write_int(tc, writer, 0);
     }
@@ -45,6 +47,7 @@ static void deserialize_repr_data(MVMThreadContext *tc, MVMSTable *st, MVMSerial
     MVMNativeRefREPRData *repr_data = MVM_malloc(sizeof(MVMNativeRefREPRData));
     repr_data->primitive_type = MVM_serialization_read_int(tc, reader);
     repr_data->ref_kind       = MVM_serialization_read_int(tc, reader);
+    repr_data->is_unsigned    = MVM_serialization_read_int(tc, reader);
     st->REPR_data = repr_data;
 }
 
@@ -96,6 +99,7 @@ static void compose(MVMThreadContext *tc, MVMSTable *st, MVMObject *info_hash) {
     if (IS_CONCRETE(info)) {
         MVMObject *type    = MVM_repr_at_key_o(tc, info, str_consts->type);
         MVMuint16  prim    = REPR(type)->get_storage_spec(tc, STABLE(type))->boxed_primitive;
+        MVMuint16  is_uns  = REPR(type)->get_storage_spec(tc, STABLE(type))->is_unsigned;
         if (prim != MVM_STORAGE_SPEC_BP_NONE) {
             MVMObject *refkind = MVM_repr_at_key_o(tc, info, str_consts->refkind);
             if (IS_CONCRETE(refkind)) {
@@ -121,6 +125,7 @@ static void compose(MVMThreadContext *tc, MVMSTable *st, MVMObject *info_hash) {
                 repr_data = MVM_malloc(sizeof(MVMNativeRefREPRData));
                 repr_data->primitive_type = prim;
                 repr_data->ref_kind       = kind;
+                repr_data->is_unsigned    = is_uns;
                 st->REPR_data             = repr_data;
             }
             else {
@@ -539,6 +544,24 @@ void MVM_nativeref_write_lex_i(MVMThreadContext *tc, MVMObject *ref_obj, MVMint6
             break;
         default:
             ref->body.u.lex.var->i64 = value;
+            break;
+    }
+}
+void MVM_nativeref_write_lex_u(MVMThreadContext *tc, MVMObject *ref_obj, MVMuint64 value) {
+    MVMNativeRef *ref = (MVMNativeRef *)ref_obj;
+	//fprintf(stderr, "value: %lu\n", value);
+    switch (ref->body.u.lex.type) {
+        case MVM_reg_uint8:
+            ref->body.u.lex.var->u8 = (MVMuint8)value;
+            break;
+        case MVM_reg_uint16:
+            ref->body.u.lex.var->u16 = (MVMuint16)value;
+            break;
+        case MVM_reg_uint32:
+            ref->body.u.lex.var->u32 = (MVMuint32)value;
+            break;
+        default:
+            ref->body.u.lex.var->u64 = value;
             break;
     }
 }

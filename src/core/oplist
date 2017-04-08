@@ -800,8 +800,10 @@ indexingoptimized   w(str) r(str) :pure
 captureinnerlex     r(obj) :noinline
 unicmp_s            w(int64) r(str) r(str) r(int64) r(int64) r(int64) :pure
 setdispatcherfor    r(obj) r(obj)
-getstrfromname       w(str) r(str) :pure
-indexic_s            w(int64) r(str) r(str) r(int64) :pure
+getstrfromname      w(str) r(str) :pure
+indexic_s           w(int64) r(str) r(str) r(int64) :pure
+bindattr_u          r(obj) r(obj) str r(uint64) int16
+bindattrs_u         r(obj) r(obj) r(str) r(uint64)
 
 # Spesh ops. Naming convention: start with sp_. Must all be marked .s, which
 # is how the validator knows to exclude them.
