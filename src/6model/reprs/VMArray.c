@@ -53,7 +53,8 @@ static void copy_to(MVMThreadContext *tc, MVMSTable *st, void *src, MVMObject *d
         size_t  mem_size     = dest_body->ssize * repr_data->elem_size;
         size_t  start_pos    = src_body->start * repr_data->elem_size;
         char   *copy_start   = ((char *)src_body->slots.any) + start_pos;
-        dest_body->slots.any = MVM_malloc(mem_size);
+        dest_root->header.flags |= MVM_CF_USES_FSA;
+        dest_body->slots.any = MVM_fixed_size_alloc(tc, tc->instance->fsa, mem_size);
         memcpy(dest_body->slots.any, copy_start, mem_size);
     }
     else {
@@ -92,8 +93,14 @@ static void gc_mark(MVMThreadContext *tc, MVMSTable *st, void *data, MVMGCWorkli
 
 /* Called by the VM in order to free memory associated with this object. */
 static void gc_free(MVMThreadContext *tc, MVMObject *obj) {
-    MVMArray *arr = (MVMArray *)obj;
-    MVM_free(arr->body.slots.any);
+    MVMArray         *arr       = (MVMArray *) obj;
+    MVMArrayREPRData *repr_data = (MVMArrayREPRData *) obj->st->REPR_data;
+    if (obj->header.flags & MVM_CF_USES_FSA) {
+        MVM_fixed_size_free(tc, tc->instance->fsa, arr->body.ssize * repr_data->elem_size, arr->body.slots.any);
+    }
+    else {
+        MVM_free(arr->body.slots.any);
+    }
 }
 
 /* Marks the representation data in an STable.*/
@@ -299,10 +306,11 @@ static MVMuint64 zero_slots(MVMThreadContext *tc, MVMArrayBody *body,
     return elems;
 }
 
-static void set_size_internal(MVMThreadContext *tc, MVMArrayBody *body, MVMuint64 n, MVMArrayREPRData *repr_data) {
+static void set_size_internal(MVMThreadContext *tc, MVMObject *obj, MVMArrayBody *body, MVMuint64 n, MVMArrayREPRData *repr_data) {
     MVMuint64   elems = body->elems;
     MVMuint64   start = body->start;
     MVMuint64   ssize = body->ssize;
+    MVMuint64   osize = body->ssize;
     void       *slots = body->slots.any;
 
     if (n == elems)
@@ -355,8 +363,12 @@ static void set_size_internal(MVMThreadContext *tc, MVMArrayBody *body, MVMuint6
 
     /* now allocate the new slot buffer */
     slots = (slots)
-            ? MVM_realloc(slots, ssize * repr_data->elem_size)
-            : MVM_malloc(ssize * repr_data->elem_size);
+            ? obj->header.flags & MVM_CF_USES_FSA
+              ? MVM_fixed_size_realloc_at_safepoint(tc, tc->instance->fsa, slots, osize * repr_data->elem_size, ssize * repr_data->elem_size)
+              : MVM_realloc(slots, ssize * repr_data->elem_size)
+            : obj->header.flags & MVM_CF_USES_FSA
+              ? MVM_fixed_size_alloc(tc, tc->instance->fsa, ssize * repr_data->elem_size)
+              : MVM_malloc(ssize * repr_data->elem_size);
 
     /* fill out any unused slots with NULL pointers or zero values */
     body->slots.any = slots;
@@ -377,7 +389,7 @@ static void bind_pos(MVMThreadContext *tc, MVMSTable *st, MVMObject *root, void 
             MVM_exception_throw_adhoc(tc, "MVMArray: Index out of bounds");
     }
     else if (index >= body->elems)
-        set_size_internal(tc, body, index + 1, repr_data);
+        set_size_internal(tc, root, body, index + 1, repr_data);
 
     /* Go by type. */
     switch (repr_data->slot_type) {
@@ -456,7 +468,7 @@ static void set_elems(MVMThreadContext *tc, MVMSTable *st, MVMObject *root, void
     MVMArrayREPRData *repr_data = (MVMArrayREPRData *)st->REPR_data;
     MVMArrayBody     *body      = (MVMArrayBody *)data;
     enter_single_user(tc, body);
-    set_size_internal(tc, body, count, repr_data);
+    set_size_internal(tc, root, body, count, repr_data);
     exit_single_user(tc, body);
 }
 
@@ -464,7 +476,7 @@ static void push(MVMThreadContext *tc, MVMSTable *st, MVMObject *root, void *dat
     MVMArrayBody     *body      = (MVMArrayBody *)data;
     MVMArrayREPRData *repr_data = (MVMArrayREPRData *)st->REPR_data;
     enter_single_user(tc, body);
-    set_size_internal(tc, body, body->elems + 1, repr_data);
+    set_size_internal(tc, root, body, body->elems + 1, repr_data);
     switch (repr_data->slot_type) {
         case MVM_ARRAY_OBJ:
             if (kind != MVM_reg_obj)
@@ -623,7 +635,7 @@ static void unshift(MVMThreadContext *tc, MVMSTable *st, MVMObject *root, void *
         MVMuint64 elems = body->elems;
 
         /* grow the array */
-        set_size_internal(tc, body, elems + n, repr_data);
+        set_size_internal(tc, root, body, elems + n, repr_data);
 
         /* move elements and set start */
         memmove(
@@ -853,7 +865,7 @@ static void asplice(MVMThreadContext *tc, MVMSTable *st, MVMObject *root, void *
     }
 
     /* now resize the array */
-    set_size_internal(tc, body, offset + elems1 + tail, repr_data);
+    set_size_internal(tc, root, body, offset + elems1 + tail, repr_data);
 
     start = body->start;
     if (tail > 0 && count < elems1) {
@@ -1149,10 +1161,11 @@ static void deserialize(MVMThreadContext *tc, MVMSTable *st, MVMObject *root, vo
     MVMArrayBody     *body      = (MVMArrayBody *)data;
     MVMint64 i;
 
+    root->header.flags |= MVM_CF_USES_FSA;
     body->elems = MVM_serialization_read_int(tc, reader);
     body->ssize = body->elems;
     if (body->ssize)
-        body->slots.any = MVM_malloc(body->ssize * repr_data->elem_size);
+        body->slots.any = MVM_fixed_size_alloc(tc, tc->instance->fsa, body->ssize * repr_data->elem_size);
 
     for (i = 0; i < body->elems; i++) {
         switch (repr_data->slot_type) {

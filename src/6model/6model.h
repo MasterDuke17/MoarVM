@@ -134,7 +134,10 @@ typedef enum {
     /* Note: if you're hunting for a flag, some day in the future when we
      * have used them all, this one is easy enough to eliminate by having the
      * tiny number of objects marked this way in a remembered set. */
-    MVM_CF_NEVER_REPOSSESS = 2048
+    MVM_CF_NEVER_REPOSSESS = 2048,
+
+    /* Does this use the FSA? */
+    MVM_CF_USES_FSA = 4096
 } MVMCollectableFlags;
 
 #ifdef MVM_USE_OVERFLOW_SERIALIZATION_INDEX
