@@ -228,14 +228,11 @@ void * MVM_fixed_size_realloc_at_safepoint(MVMThreadContext *tc, MVMFixedSizeAll
     if (old_bin == new_bin) {
         return p;
     }
-    else if (old_bin < MVM_FSA_BINS || new_bin < MVM_FSA_BINS) {
+    else {
         void *allocd = MVM_fixed_size_alloc(tc, al, new_bytes);
         memcpy(allocd, p, new_bin > old_bin ? old_bytes : new_bytes);
         MVM_fixed_size_free_at_safepoint(tc, al, old_bytes, p);
         return allocd;
-    }
-    else {
-        return MVM_realloc(p, new_bytes);
     }
 }
 
