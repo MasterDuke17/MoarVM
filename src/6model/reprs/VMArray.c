@@ -364,7 +364,7 @@ static void set_size_internal(MVMThreadContext *tc, MVMObject *obj, MVMArrayBody
     /* now allocate the new slot buffer */
     slots = (slots)
             ? obj->header.flags & MVM_CF_USES_FSA
-              ? MVM_fixed_size_realloc(tc, tc->instance->fsa, slots, osize * repr_data->elem_size, ssize * repr_data->elem_size)
+              ? MVM_fixed_size_realloc_at_safepoint(tc, tc->instance->fsa, slots, osize * repr_data->elem_size, ssize * repr_data->elem_size)
               : MVM_realloc(slots, ssize * repr_data->elem_size)
             : obj->header.flags & MVM_CF_USES_FSA
               ? MVM_fixed_size_alloc(tc, tc->instance->fsa, ssize * repr_data->elem_size)
