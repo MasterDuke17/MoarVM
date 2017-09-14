@@ -217,8 +217,7 @@ void * MVM_fixed_size_realloc(MVMThreadContext *tc, MVMFixedSizeAlloc *al, void 
         return allocd;
     }
     else {
-        MVM_realloc(p, new_bytes);
-        return p;
+        return MVM_realloc(p, new_bytes);
     }
 }
 
@@ -236,8 +235,7 @@ void * MVM_fixed_size_realloc_at_safepoint(MVMThreadContext *tc, MVMFixedSizeAll
         return allocd;
     }
     else {
-        MVM_realloc(p, new_bytes);
-        return p;
+        return MVM_realloc(p, new_bytes);
     }
 }
 
