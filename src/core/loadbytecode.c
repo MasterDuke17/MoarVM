@@ -43,8 +43,8 @@ void MVM_load_bytecode_buffer(MVMThreadContext *tc, MVMObject *buf) {
 
     /* MVMCompUnit expects the data to be non-GC managed as it usually comes straight from a file */
     data_size = ((MVMArray *)buf)->body.elems;
-    data_start = MVM_malloc(data_size);
-    memcpy(data_start, (MVMuint8 *)(((MVMArray *)buf)->body.slots.i8 + ((MVMArray *)buf)->body.start), data_size);
+    data_start = MVM_malloc(sizeof(MVMuint64) + data_size);
+    memcpy(data_start + sizeof(MVMuint64), (MVMuint8 *)(((MVMArray *)buf)->body.storage.slots.i8 + ((MVMArray *)buf)->body.start), data_size);
 
     cu = MVM_cu_from_bytes(tc, data_start, data_size);
     run_comp_unit(tc, cu);

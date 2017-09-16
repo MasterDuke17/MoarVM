@@ -3,15 +3,7 @@
  * this issue.) */
 #define MVM_ARRAY_CONC_DEBUG 0
 
-/* Representation used by VM-level arrays. Adopted from QRPA work by
- * Patrick Michaud. */
-struct MVMArrayBody {
-    /* number of elements (from user's point of view) */
-    MVMuint64   elems;
-
-    /* slot index of first element */
-    MVMuint64   start;
-
+typedef struct {
     /* size of slots array */
     MVMuint64   ssize;
 
@@ -31,6 +23,19 @@ struct MVMArrayBody {
         MVMuint8   *u8;
         void       *any;
     } slots;
+} MVMArrayStorage;
+
+/* Representation used by VM-level arrays. Adopted from QRPA work by
+ * Patrick Michaud. */
+struct MVMArrayBody {
+    /* number of elements (from user's point of view) */
+    MVMuint64   elems;
+
+    /* slot index of first element */
+    MVMuint64   start;
+
+    /* size and data */
+    MVMArrayStorage storage;
 
 #if MVM_ARRAY_CONC_DEBUG
     AO_t in_use;

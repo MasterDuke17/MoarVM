@@ -186,17 +186,17 @@ void MVM_decoder_add_bytes(MVMThreadContext *tc, MVMDecoder *decoder, MVMObject 
         switch (((MVMArrayREPRData *)STABLE(buffer)->REPR_data)->slot_type) {
             case MVM_ARRAY_U8:
             case MVM_ARRAY_I8:
-                output = (char *)(((MVMArray *)buffer)->body.slots.i8 + ((MVMArray *)buffer)->body.start);
+                output = (char *)(((MVMArray *)buffer)->body.storage.slots.i8 + ((MVMArray *)buffer)->body.start);
                 output_size = ((MVMArray *)buffer)->body.elems;
                 break;
             case MVM_ARRAY_U16:
             case MVM_ARRAY_I16:
-                output = (char *)(((MVMArray *)buffer)->body.slots.i16 + ((MVMArray *)buffer)->body.start);
+                output = (char *)(((MVMArray *)buffer)->body.storage.slots.i16 + ((MVMArray *)buffer)->body.start);
                 output_size = ((MVMArray *)buffer)->body.elems * 2;
                 break;
             case MVM_ARRAY_U32:
             case MVM_ARRAY_I32:
-                output = (char *)(((MVMArray *)buffer)->body.slots.i32 + ((MVMArray *)buffer)->body.start);
+                output = (char *)(((MVMArray *)buffer)->body.storage.slots.i32 + ((MVMArray *)buffer)->body.start);
                 output_size = ((MVMArray *)buffer)->body.elems * 4;
                 break;
             default:
@@ -302,9 +302,9 @@ MVMObject * MVM_decoder_take_bytes(MVMThreadContext *tc, MVMDecoder *decoder,
     enter_single_user(tc, decoder);
     read = MVM_string_decodestream_bytes_to_buf(tc, ds, &buf, bytes);
     exit_single_user(tc, decoder);
-    ((MVMArray *)result)->body.slots.i8 = (MVMint8 *)buf;
+    ((MVMArray *)result)->body.storage.slots.i8 = (MVMint8 *)buf;
     ((MVMArray *)result)->body.start    = 0;
-    ((MVMArray *)result)->body.ssize    = read;
+    ((MVMArray *)result)->body.storage.ssize    = read;
     ((MVMArray *)result)->body.elems    = read;
     return result;
 }

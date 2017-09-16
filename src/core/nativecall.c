@@ -341,7 +341,7 @@ void * MVM_nativecall_unmarshal_vmarray(MVMThreadContext *tc, MVMObject *value) 
         MVMArrayBody *body          = &((MVMArray *)value)->body;
         MVMArrayREPRData *repr_data = (MVMArrayREPRData *)STABLE(value)->REPR_data;
         size_t start_pos            = body->start * repr_data->elem_size;
-        return ((char *)body->slots.any) + start_pos;
+        return ((char *)body->storage.slots.any) + start_pos;
     }
     else
         MVM_exception_throw_adhoc(tc,

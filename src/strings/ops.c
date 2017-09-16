@@ -1504,7 +1504,7 @@ MVMObject * MVM_string_encode_to_buf(MVMThreadContext *tc, MVMString *s, MVMStri
     }
     if (!elem_size)
         MVM_exception_throw_adhoc(tc, "encode requires a native int array");
-    if (((MVMArray *)buf)->body.slots.any)
+    if (((MVMArray *)buf)->body.storage.slots.any)
         MVM_exception_throw_adhoc(tc, "encode requires an empty array");
 
     /* At least find_encoding may allocate on first call, so root just
@@ -1518,9 +1518,9 @@ MVMObject * MVM_string_encode_to_buf(MVMThreadContext *tc, MVMString *s, MVMStri
     });
 
     /* Stash the encoded data in the VMArray. */
-    ((MVMArray *)buf)->body.slots.i8 = (MVMint8 *)encoded;
+    ((MVMArray *)buf)->body.storage.slots.i8 = (MVMint8 *)encoded;
     ((MVMArray *)buf)->body.start    = 0;
-    ((MVMArray *)buf)->body.ssize    = output_size / elem_size;
+    ((MVMArray *)buf)->body.storage.ssize    = output_size / elem_size;
     ((MVMArray *)buf)->body.elems    = output_size / elem_size;
     return buf;
 }
@@ -1555,7 +1555,7 @@ MVMString * MVM_string_decode_from_buf(MVMThreadContext *tc, MVMObject *buf, MVM
         encoding_flag = MVM_string_find_encoding(tc, enc_name);
     });
     return MVM_string_decode(tc, tc->instance->VMString,
-        (char *)(((MVMArray *)buf)->body.slots.i8 + ((MVMArray *)buf)->body.start),
+        (char *)(((MVMArray *)buf)->body.storage.slots.i8 + ((MVMArray *)buf)->body.start),
         ((MVMArray *)buf)->body.elems * elem_size,
         encoding_flag);
 }

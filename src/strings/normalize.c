@@ -45,7 +45,7 @@ void MVM_unicode_normalize_codepoints(MVMThreadContext *tc, const MVMObject *in,
     assert_codepoint_array(tc, out, "Normalization output must be native array of 32-bit integers");
 
     /* Get input array; if it's empty, we're done already. */
-    input       = (MVMCodepoint *)((MVMArray *)in)->body.slots.u32 + ((MVMArray *)in)->body.start;
+    input       = (MVMCodepoint *)((MVMArray *)in)->body.storage.slots.u32 + ((MVMArray *)in)->body.start;
     input_codes = ((MVMArray *)in)->body.elems;
     if (input_codes == 0)
         return;
@@ -77,7 +77,7 @@ void MVM_unicode_normalize_codepoints(MVMThreadContext *tc, const MVMObject *in,
     MVM_unicode_normalizer_cleanup(tc, &norm);
 
     /* Put result into array body. */
-    ((MVMArray *)out)->body.slots.u32 = (MVMuint32 *) result;
+    ((MVMArray *)out)->body.storage.slots.u32 = (MVMuint32 *) result;
     ((MVMArray *)out)->body.start     = 0;
     ((MVMArray *)out)->body.elems     = result_pos;
 }
@@ -134,7 +134,7 @@ MVMString * MVM_unicode_codepoints_to_nfg_string(MVMThreadContext *tc, const MVM
 
     assert_codepoint_array(tc, codes, "Code points to string input must be native array of 32-bit integers");
 
-    input       = (MVMCodepoint *)((MVMArray *)codes)->body.slots.u32 + ((MVMArray *)codes)->body.start;
+    input       = (MVMCodepoint *)((MVMArray *)codes)->body.storage.slots.u32 + ((MVMArray *)codes)->body.start;
     input_codes = ((MVMArray *)codes)->body.elems;
     return MVM_unicode_codepoints_c_array_to_nfg_string(tc, input, input_codes);
 }
@@ -188,7 +188,7 @@ void MVM_unicode_string_to_codepoints(MVMThreadContext *tc, MVMString *s, MVMNor
     }
 
     /* Put result into array body. */
-    ((MVMArray *)out)->body.slots.u32 = (MVMuint32 *)result;
+    ((MVMArray *)out)->body.storage.slots.u32 = (MVMuint32 *)result;
     ((MVMArray *)out)->body.start     = 0;
     ((MVMArray *)out)->body.elems     = result_pos;
 }
