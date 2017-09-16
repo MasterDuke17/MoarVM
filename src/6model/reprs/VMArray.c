@@ -49,11 +49,11 @@ static void copy_to(MVMThreadContext *tc, MVMSTable *st, void *src, MVMObject *d
     dest_body->elems = src_body->elems;
     dest_body->storage.ssize = src_body->elems;
     dest_body->start = 0;
+    dest_root->header.flags |= MVM_CF_USES_FSA;
     if (dest_body->elems > 0) {
         size_t  mem_size     = dest_body->storage.ssize * repr_data->elem_size;
         size_t  start_pos    = src_body->start * repr_data->elem_size;
         char   *copy_start   = ((char *)src_body->storage.slots.any) + start_pos;
-        dest_root->header.flags |= MVM_CF_USES_FSA;
         dest_body->storage.slots.any = MVM_fixed_size_alloc(tc, tc->instance->fsa, mem_size);
         memcpy(dest_body->storage.slots.any, copy_start, mem_size);
     }
