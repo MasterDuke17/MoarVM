@@ -177,9 +177,10 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
     MVMint32 line_ending = 0;
     MVMint32 state = 0;
     MVMint32 bufsize = bytes;
+    MVMint32 old_bufsize = bufsize;
     MVMGrapheme32 lowest_graph  =  0x7fffffff;
     MVMGrapheme32 highest_graph = -0x7fffffff;
-    MVMGrapheme32 *buffer = MVM_malloc(sizeof(MVMGrapheme32) * bufsize);
+    MVMGrapheme32 *buffer = MVM_fixed_size_alloc(tc, tc->instance->fsa, sizeof(MVMGrapheme32) * bufsize);
     size_t orig_bytes;
     const char *orig_utf8;
     MVMint32 line;
@@ -200,9 +201,10 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
             ready = MVM_unicode_normalizer_process_codepoint_to_grapheme(tc, &norm, codepoint, &g);
             if (ready) {
                 while (count + ready > bufsize) { /* if the buffer's full make a bigger one */
-                    buffer = MVM_realloc(buffer, sizeof(MVMGrapheme32) * (
+                    buffer = MVM_fixed_size_realloc(tc, tc->instance->fsa, buffer, old_bufsize, sizeof(MVMGrapheme32) * (
                         bufsize >= UTF8_MAXINC ? (bufsize += UTF8_MAXINC) : (bufsize *= 2)
                     ));
+                    old_bufsize = bufsize;
                 }
                 buffer[count++] = g;
                 lowest_graph = g < lowest_graph ? g : lowest_graph;
@@ -243,18 +245,18 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
                         col++;
                     break;
                 case UTF8_REJECT:
-                    MVM_free(buffer);
+                    MVM_fixed_size_free(tc, tc->instance->fsa, bufsize, buffer);
                     MVM_exception_throw_adhoc(tc, "Malformed UTF-8 at line %u col %u", line, col);
                 }
             }
-            MVM_free(buffer);
+            MVM_fixed_size_free(tc, tc->instance->fsa, bufsize, buffer);
             MVM_exception_throw_adhoc(tc, "Concurrent modification of UTF-8 input buffer!");
             break;
         }
     }
     if (state != UTF8_ACCEPT) {
         MVM_unicode_normalizer_cleanup(tc, &norm);
-        MVM_free(buffer);
+        MVM_fixed_size_free(tc, tc->instance->fsa, bufsize, buffer);
         MVM_exception_throw_adhoc(tc, "Malformed termination of UTF-8 string");
     }
 
@@ -263,7 +265,8 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
     ready = MVM_unicode_normalizer_available(tc, &norm);
     if (ready) {
         if (count + ready > bufsize) {
-            buffer = MVM_realloc(buffer, sizeof(MVMGrapheme32) * (count + ready));
+            buffer = MVM_fixed_size_realloc(tc, tc->instance->fsa, buffer, old_bufsize, sizeof(MVMGrapheme32) * (count + ready));
+            old_bufsize = sizeof(MVMGrapheme32) * (count + ready);
         }
         while (ready--) {
             MVMGrapheme32 g;
@@ -279,21 +282,24 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
      * That happens when our lowest value is bigger than -129 and our
      * highest value is lower than 128. */
     if (-128 <= lowest_graph && highest_graph <= 127) {
-        MVMGrapheme8 *new_buffer = MVM_malloc(sizeof(MVMGrapheme8) * count);
+        MVMGrapheme8 *new_buffer = MVM_fixed_size_alloc(tc, tc->instance->fsa, sizeof(MVMGrapheme8) * count);
         for (ready = 0; ready < count; ready++) {
             new_buffer[ready] = buffer[ready];
         }
-        MVM_free(buffer);
+        MVM_fixed_size_free(tc, tc->instance->fsa, old_bufsize, buffer);
         result->body.storage.blob_8  = new_buffer;
+        result->common.header.flags |= MVM_CF_USES_FSA;
         result->body.storage_type    = MVM_STRING_GRAPHEME_8;
     } else {
         /* just keep the same buffer as the MVMString's buffer.  Later
          * we can add heuristics to resize it if we have enough free
          * memory */
         if (bufsize - count > 4) {
-            buffer = MVM_realloc(buffer, count * sizeof(MVMGrapheme32));
+            buffer = MVM_fixed_size_realloc(tc, tc->instance->fsa, buffer, old_bufsize, count * sizeof(MVMGrapheme32));
+            old_bufsize = count * sizeof(MVMGrapheme32);
         }
         result->body.storage.blob_32 = buffer;
+        result->common.header.flags |= MVM_CF_USES_FSA;
         result->body.storage_type    = MVM_STRING_GRAPHEME_32;
     }
     result->body.num_graphs      = count;
@@ -324,7 +330,7 @@ MVMuint32 MVM_string_utf8_decodestream(MVMThreadContext *tc, MVMDecodeStream *ds
     MVMint32 state = 0;
     MVMCodepoint codepoint = 0;
     MVMCodepoint lag_codepoint = -1;
-    MVMint32 bufsize;
+    MVMint32 bufsize, old_bufsize;
     MVMGrapheme32 *buffer           = NULL;
     MVMDecodeStreamBytes *cur_bytes = NULL;
     MVMDecodeStreamBytes *last_accept_bytes     = ds->bytes_head;
@@ -346,8 +352,8 @@ MVMuint32 MVM_string_utf8_decodestream(MVMThreadContext *tc, MVMDecodeStream *ds
      * use the fast path. */
     can_fast_path = MVM_unicode_normalizer_empty(tc, &(ds->norm));
 
-    bufsize = ds->result_size_guess;
-    buffer = MVM_malloc(bufsize * sizeof(MVMGrapheme32));
+    old_bufsize = bufsize = ds->result_size_guess;
+    buffer = MVM_fixed_size_alloc(tc, tc->instance->fsa, bufsize * sizeof(MVMGrapheme32));
 
     /* Decode each of the buffers. */
     cur_bytes = ds->bytes_head;
@@ -396,7 +402,7 @@ MVMuint32 MVM_string_utf8_decodestream(MVMThreadContext *tc, MVMDecodeStream *ds
                     break;
                 }
                 case UTF8_REJECT:
-                    MVM_free(buffer);
+                    MVM_fixed_size_free(tc, tc->instance->fsa, bufsize, buffer);
                     MVM_exception_throw_adhoc(tc, "Malformed UTF-8");
                     break;
                 }
@@ -425,7 +431,7 @@ MVMuint32 MVM_string_utf8_decodestream(MVMThreadContext *tc, MVMDecodeStream *ds
                         * one to the buffers linked list, and continue with a new
                         * one. */
                         MVM_string_decodestream_add_chars(tc, ds, buffer, bufsize);
-                        buffer = MVM_malloc(bufsize * sizeof(MVMGrapheme32));
+                        buffer = MVM_fixed_size_alloc(tc, tc->instance->fsa, bufsize * sizeof(MVMGrapheme32));
                         count = 0;
                     }
                     buffer[count++] = lag_codepoint;
@@ -445,7 +451,7 @@ MVMuint32 MVM_string_utf8_decodestream(MVMThreadContext *tc, MVMDecodeStream *ds
                     break;
                 }
                 case UTF8_REJECT:
-                    MVM_free(buffer);
+                    MVM_fixed_size_free(tc, tc->instance->fsa, bufsize * sizeof(MVMGrapheme32), buffer);
                     MVM_exception_throw_adhoc(tc, "Malformed UTF-8");
                     break;
                 }
@@ -485,7 +491,7 @@ MVMuint32 MVM_string_utf8_decodestream(MVMThreadContext *tc, MVMDecodeStream *ds
                             * one to the buffers linked list, and continue with a new
                             * one. */
                             MVM_string_decodestream_add_chars(tc, ds, buffer, bufsize);
-                            buffer = MVM_malloc(bufsize * sizeof(MVMGrapheme32));
+                            buffer = MVM_fixed_size_alloc(tc, tc->instance->fsa, bufsize * sizeof(MVMGrapheme32));
                             count = 0;
                         }
                         buffer[count++] = g;
@@ -499,7 +505,7 @@ MVMuint32 MVM_string_utf8_decodestream(MVMThreadContext *tc, MVMDecodeStream *ds
                     break;
                 }
                 case UTF8_REJECT:
-                    MVM_free(buffer);
+                    MVM_fixed_size_free(tc, tc->instance->fsa, bufsize * sizeof(MVMGrapheme32), buffer);
                     MVM_exception_throw_adhoc(tc, "Malformed UTF-8");
                     break;
                 }
@@ -515,7 +521,7 @@ MVMuint32 MVM_string_utf8_decodestream(MVMThreadContext *tc, MVMDecodeStream *ds
         MVM_string_decodestream_add_chars(tc, ds, buffer, count);
     }
     else {
-        MVM_free(buffer);
+        MVM_fixed_size_free(tc, tc->instance->fsa, bufsize * sizeof(MVMGrapheme32), buffer);
     }
     MVM_string_decodestream_discard_to(tc, ds, last_accept_bytes, last_accept_pos);
 
