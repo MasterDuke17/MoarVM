@@ -226,7 +226,7 @@ void add_type_tuple_at_offset(MVMThreadContext *tc, MVMSpeshStatsByOffset *oss,
 void sim_stack_init(MVMThreadContext *tc, MVMSpeshSimStack *sims) {
     sims->used = 0;
     sims->limit = 32;
-    sims->frames = MVM_malloc(sims->limit * sizeof(MVMSpeshSimStackFrame));
+    sims->frames = MVM_fixed_size_alloc(tc, tc->instance->fsa, sims->limit * sizeof(MVMSpeshSimStackFrame));
     sims->depth = 0;
 }
 
@@ -237,7 +237,7 @@ void sim_stack_push(MVMThreadContext *tc, MVMSpeshSimStack *sims, MVMStaticFrame
     MVMCallsite *cs;
     if (sims->used == sims->limit) {
         sims->limit *= 2;
-        sims->frames = MVM_realloc(sims->frames, sims->limit * sizeof(MVMSpeshSimStackFrame));
+        sims->frames = MVM_fixed_size_realloc(tc, tc->instance->fsa, sims->frames, sims->used * sizeof(MVMSpeshSimStackFrame), sims->limit * sizeof(MVMSpeshSimStackFrame));
     }
     frame = &(sims->frames[sims->used++]);
     frame->sf = sf;
@@ -283,13 +283,13 @@ void incorporate_stats(MVMThreadContext *tc, MVMSpeshSimStackFrame *simf,
     MVMint32 first_type_hit = 0;
 
     /* Bump version if needed. */
-    if (simf->ss->last_update != tc->instance->spesh_stats_version) {
+    if (simf && simf->ss && simf->ss->last_update != tc->instance->spesh_stats_version) {
         simf->ss->last_update = tc->instance->spesh_stats_version;
         MVM_repr_push_o(tc, sf_updated, (MVMObject *)simf->sf);
     }
 
     /* Add OSR hits at callsite level and update depth. */
-    if (simf->osr_hits) {
+    if (simf && simf->osr_hits) {
         simf->ss->osr_hits += simf->osr_hits;
         simf->ss->by_callsite[simf->callsite_idx].osr_hits += simf->osr_hits;
     }
@@ -407,7 +407,7 @@ MVMSpeshSimStackFrame * sim_stack_find(MVMThreadContext *tc, MVMSpeshSimStack *s
 void sim_stack_teardown(MVMThreadContext *tc, MVMSpeshSimStack *sims, MVMObject *sf_updated) {
     while (sims->used)
         sim_stack_pop(tc, sims, sf_updated);
-    MVM_free(sims->frames);
+    MVM_fixed_size_free(tc, tc->instance->fsa, sims->limit * sizeof(MVMSpeshSimStackFrame), sims->frames);
 }
 
 /* Gets the parameter type slot from a simulation frame. */
@@ -773,7 +773,7 @@ void MVM_spesh_sim_stack_gc_describe(MVMThreadContext *tc, MVMHeapSnapshotState 
 
 void MVM_spesh_sim_stack_destroy(MVMThreadContext *tc, MVMSpeshSimStack *sims) {
     if (sims) {
-        MVM_free(sims->frames);
+        MVM_fixed_size_free(tc, tc->instance->fsa, sims->limit * sizeof(MVMSpeshSimStackFrame), sims->frames);
         MVM_free(sims);
     }
 }
