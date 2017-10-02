@@ -93,7 +93,7 @@ MVMString * MVM_unicode_codepoints_c_array_to_nfg_string(MVMThreadContext *tc, M
 
     /* Guess output size based on cp_v size. */
     result_alloc = cp_count;
-    result       = MVM_malloc(result_alloc * sizeof(MVMCodepoint));
+    result       = MVM_fixed_size_alloc(tc, tc->instance->fsa, result_alloc * sizeof(MVMCodepoint));
 
     /* Perform normalization at grapheme level. */
     MVM_unicode_normalizer_init(tc, &norm, MVM_NORMALIZE_NFG);
@@ -120,6 +120,7 @@ MVMString * MVM_unicode_codepoints_c_array_to_nfg_string(MVMThreadContext *tc, M
     /* Produce an MVMString of the result. */
     str = (MVMString *)MVM_repr_alloc_init(tc, tc->instance->VMString);
     str->body.storage.blob_32 = result;
+    str->common.header.flags |= MVM_CF_USES_FSA;
     str->body.storage_type    = MVM_STRING_GRAPHEME_32;
     str->body.num_graphs      = result_pos;
     return str;

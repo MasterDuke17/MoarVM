@@ -223,6 +223,7 @@ static void iterate_gi_into_string(MVMThreadContext *tc, MVMGraphemeIter *gi, MV
     result->body.storage_type    = MVM_STRING_GRAPHEME_8;
     result->body.storage.blob_8  = MVM_fixed_size_alloc(tc, tc->instance->fsa,
                                                         result->body.num_graphs * sizeof(MVMGrapheme8));
+    result->common.header.flags |= MVM_CF_USES_FSA;
     for (i = 0; i < result->body.num_graphs; i++) {
         MVMGrapheme32 g = MVM_string_gi_get_grapheme(tc, gi);
         result->body.storage.blob_8[i] = g;
@@ -256,7 +257,6 @@ static void iterate_gi_into_string(MVMThreadContext *tc, MVMGraphemeIter *gi, MV
             }
         }
     }
-    result->common.header.flags |= MVM_CF_USES_FSA;
 }
 #define copy_strands_memcpy(BLOB_TYPE, SIZEOF_TYPE, STORAGE_TYPE) { \
     result->body.storage.BLOB_TYPE = MVM_malloc(sizeof(SIZEOF_TYPE) * MVM_string_graphs_nocheck(tc, orig)); \

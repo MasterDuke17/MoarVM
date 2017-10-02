@@ -191,6 +191,8 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
     MVMNormalizer norm;
     MVM_unicode_normalizer_init(tc, &norm, MVM_NORMALIZE_NFG);
 
+    result->common.header.flags |= MVM_CF_USES_FSA;
+
     orig_bytes = bytes;
     orig_utf8 = utf8;
 
@@ -300,7 +302,6 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
         result->body.storage_type    = MVM_STRING_GRAPHEME_32;
     }
     result->body.num_graphs      = count;
-    result->common.header.flags |= MVM_CF_USES_FSA;
 
     return result;
 }
