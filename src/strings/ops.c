@@ -1812,6 +1812,7 @@ MVMString * MVM_string_join(MVMThreadContext *tc, MVMString *separator, MVMObjec
     /* Allocate result. */
     MVMROOT2(tc, separator, input, {
         result = (MVMString *)MVM_repr_alloc_init(tc, tc->instance->VMString);
+        result->common.header.flags |= MVM_CF_USES_FSA;
     });
 
     /* Take a first pass through the string, counting up length and the total
@@ -1925,7 +1926,6 @@ MVMString * MVM_string_join(MVMThreadContext *tc, MVMString *separator, MVMObjec
         result->body.storage_type    = MVM_STRING_GRAPHEME_32;
         result->body.storage.blob_32 = MVM_fixed_size_alloc(tc, tc->instance->fsa,
                                                             total_graphs * sizeof(MVMGrapheme32));
-        result->common.header.flags |= MVM_CF_USES_FSA;
         for (i = 0; i < num_pieces; i++) {
             /* Get piece. */
             MVMString *piece = pieces[i];
