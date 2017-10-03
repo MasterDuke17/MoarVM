@@ -242,13 +242,8 @@ static void iterate_gi_into_string(MVMThreadContext *tc, MVMGraphemeIter *gi, MV
             for (i = 0; i < prev_i; i++) {
                 result->body.storage.blob_32[i] = old_ref[i];
             }
-            if (result->common.header.flags & MVM_CF_USES_FSA) {
-                MVM_fixed_size_free(tc, tc->instance->fsa,
-                                    result->body.num_graphs * sizeof(MVMGrapheme8), old_ref);
-            }
-            else {
-                MVM_free(old_ref);
-            }
+            MVM_fixed_size_free(tc, tc->instance->fsa,
+                                result->body.num_graphs * sizeof(MVMGrapheme8), old_ref);
             /* Store the grapheme which interupted the sequence. After that we can
              * continue from where we left off using the grapheme iterator */
             result->body.storage.blob_32[prev_i] = g;
