@@ -121,7 +121,7 @@ MVMString * MVM_unicode_codepoints_c_array_to_nfg_string(MVMThreadContext *tc, M
 
     /* Produce an MVMString of the result. */
     str = (MVMString *)MVM_repr_alloc_init(tc, tc->instance->VMString);
-    str->body.storage.blob_32 = result;
+    str->body.storage.blob_32 = MVM_fixed_size_realloc(tc, tc->instance->fsa, result, result_alloc * sizeof(MVMCodepoint), result_pos * sizeof(MVMGrapheme32));
     str->common.header.flags |= MVM_CF_USES_FSA;
     str->body.storage_type    = MVM_STRING_GRAPHEME_32;
     str->body.num_graphs      = result_pos;
