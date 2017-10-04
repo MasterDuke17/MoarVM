@@ -916,6 +916,7 @@ MVMString * MVM_string_concatenate(MVMThreadContext *tc, MVMString *a, MVMString
                 if (lost_strands)
                     result->body.num_strands -= lost_strands;
                 /* Adjust result->num_graphs */
+                result->body.storage.strands = MVM_fixed_size_realloc(tc, tc->instance->fsa, result->body.storage.strands, (result->body.num_strands + lost_strands) * sizeof(MVMStringStrand), result->body.num_strands * sizeof(MVMStringStrand));
                 result->body.num_graphs += renormalized_section_graphs - consumed_b - consumed_a;
             }
         }
