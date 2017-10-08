@@ -295,7 +295,7 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
         /* just keep the same buffer as the MVMString's buffer.  Later
          * we can add heuristics to resize it if we have enough free
          * memory */
-        if (bufsize - count > 4) {
+        if (old_bufsize != count) {
             buffer = MVM_fixed_size_realloc(tc, tc->instance->fsa, buffer, old_bufsize * sizeof(MVMGrapheme32), count * sizeof(MVMGrapheme32));
         }
         result->body.storage.blob_32 = buffer;
