@@ -254,7 +254,7 @@ static void iterate_gi_into_string(MVMThreadContext *tc, MVMGraphemeIter *gi, MV
     }
 }
 #define copy_strands_memcpy(BLOB_TYPE, SIZEOF_TYPE, STORAGE_TYPE) { \
-    result->body.storage.BLOB_TYPE = MVM_malloc(sizeof(SIZEOF_TYPE) * MVM_string_graphs_nocheck(tc, orig)); \
+    result->body.storage.BLOB_TYPE = MVM_fixed_size_alloc(tc, tc->instance->fsa, sizeof(SIZEOF_TYPE) * MVM_string_graphs_nocheck(tc, orig)); \
     for (i = 0; i < orig->body.num_strands; i++) { \
         size_t graphs_this_strand =  orig->body.storage.strands[i].end - orig->body.storage.strands[i].start; \
         /* If it's 8bit format and there's only one grapheme */ \
@@ -300,6 +300,7 @@ static MVMString * collapse_strands(MVMThreadContext *tc, MVMString *orig) {
         MVMint32 common_storage_type = orig->body.storage.strands[0].blob_string->body.storage_type;
         MVMROOT(tc, orig, {
             result = (MVMString *)MVM_repr_alloc_init(tc, tc->instance->VMString);
+            result->common.header.flags |= MVM_CF_USES_FSA;
             result->body.num_graphs = MVM_string_graphs(tc, orig);
             for (i = 1; i < orig->body.num_strands; i++) {
                 if (common_storage_type != orig->body.storage.strands[i].blob_string->body.storage_type) {
