@@ -361,8 +361,8 @@ static MVMString * re_nfg(MVMThreadContext *tc, MVMString *in) {
                 /* Doubling up the buffer size seems excessive, so just
                  * add a generous amount of storage */
                 bufsize += ready + 32;
-                out_buffer = MVM_fixed_size_realloc(tc, tc->instance->fsa, out_buffer, old_bufsize, bufsize * sizeof(MVMGrapheme32));
-                old_bufsize = bufsize * sizeof(MVMGrapheme32);
+                out_buffer = MVM_fixed_size_realloc(tc, tc->instance->fsa, out_buffer, old_bufsize * sizeof(MVMGrapheme32), bufsize * sizeof(MVMGrapheme32));
+                old_bufsize = bufsize;
             }
             out_buffer[out_pos++] = g;
             while (--ready > 0) {
@@ -374,11 +374,16 @@ static MVMString * re_nfg(MVMThreadContext *tc, MVMString *in) {
     ready = MVM_unicode_normalizer_available(tc, &norm);
     if (out_pos + ready > bufsize) {
         bufsize += ready + 1;
-        out_buffer = MVM_fixed_size_realloc(tc, tc->instance->fsa, out_buffer, old_bufsize, bufsize * sizeof(MVMGrapheme32));
+        out_buffer = MVM_fixed_size_realloc(tc, tc->instance->fsa, out_buffer, old_bufsize * sizeof(MVMGrapheme32), bufsize * sizeof(MVMGrapheme32));
+        old_bufsize = bufsize;
     }
     while (ready--) {
         out_buffer[out_pos++] = MVM_unicode_normalizer_get_grapheme(tc, &norm);
     }
+
+    if (out_pos != bufsize)
+        out_buffer = MVM_fixed_size_realloc(tc, tc->instance->fsa, out_buffer, old_bufsize * sizeof(MVMGrapheme32), out_pos * sizeof(MVMGrapheme32));
+
     MVM_unicode_normalizer_cleanup(tc, &norm);
 
     /* Build result string. */
@@ -2139,19 +2144,24 @@ MVMString * MVM_string_flip(MVMThreadContext *tc, MVMString *s) {
         res->common.header.flags |= MVM_CF_USES_FSA;
     } else {
         MVMGrapheme32  *rbuffer;
-        rbuffer = MVM_fixed_size_alloc(tc, tc->instance->fsa, sizeof(MVMGrapheme32) * sgraphs);
+	if (sgraphs == 0) {
+            res = tc->instance->str_consts.empty;
+        }
+        else {
+            rbuffer = MVM_fixed_size_alloc(tc, tc->instance->fsa, sizeof(MVMGrapheme32) * sgraphs);
 
-        if (s->body.storage_type == MVM_STRING_GRAPHEME_32)
-            for (; spos < sgraphs; spos++)
-                rbuffer[--rpos] = s->body.storage.blob_32[spos];
-        else
-            for (; spos < sgraphs; spos++)
-                rbuffer[--rpos] = MVM_string_get_grapheme_at_nocheck(tc, s, spos);
+            if (s->body.storage_type == MVM_STRING_GRAPHEME_32)
+                for (; spos < sgraphs; spos++)
+                    rbuffer[--rpos] = s->body.storage.blob_32[spos];
+            else
+                for (; spos < sgraphs; spos++)
+                    rbuffer[--rpos] = MVM_string_get_grapheme_at_nocheck(tc, s, spos);
 
-        res = (MVMString *)MVM_repr_alloc_init(tc, tc->instance->VMString);
-        res->body.storage_type    = MVM_STRING_GRAPHEME_32;
-        res->body.storage.blob_32 = rbuffer;
-        res->common.header.flags |= MVM_CF_USES_FSA;
+            res = (MVMString *)MVM_repr_alloc_init(tc, tc->instance->VMString);
+            res->body.storage_type    = MVM_STRING_GRAPHEME_32;
+            res->body.storage.blob_32 = rbuffer;
+            res->common.header.flags |= MVM_CF_USES_FSA;
+        }
     }
 
     res->body.num_graphs      = sgraphs;
