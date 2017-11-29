@@ -2109,7 +2109,8 @@ MVMString * MVM_string_escape(MVMThreadContext *tc, MVMString *s) {
 
     res = (MVMString *)MVM_repr_alloc_init(tc, tc->instance->VMString);
     res->body.storage_type    = MVM_STRING_GRAPHEME_32;
-    res->body.storage.blob_32 = buffer;
+    res->body.storage.blob_32 = MVM_fixed_size_realloc(tc, tc->instance->fsa, buffer,
+                                                       old_bytes, sizeof(MVMGrapheme32) * bpos);
     res->common.header.flags |= MVM_CF_USES_FSA;
     res->body.num_graphs      = bpos;
 
