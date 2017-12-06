@@ -655,7 +655,7 @@ MVMString * MVM_string_substring(MVMThreadContext *tc, MVMString *a, MVMint64 of
             /* It's some kind of buffer. Construct a strand view into it. */
             result->body.storage_type    = MVM_STRING_STRAND;
             result->body.storage.strands = allocate_strands(tc, 1);
-	    result->common.header.flags |= MVM_CF_USES_FSA;
+            result->common.header.flags |= MVM_CF_USES_FSA;
             result->body.num_strands     = 1;
             result->body.storage.strands[0].blob_string = a;
             result->body.storage.strands[0].start       = start_pos;
@@ -668,7 +668,7 @@ MVMString * MVM_string_substring(MVMThreadContext *tc, MVMString *a, MVMint64 of
             MVMStringStrand *orig_strand = &(a->body.storage.strands[0]);
             result->body.storage_type    = MVM_STRING_STRAND;
             result->body.storage.strands = allocate_strands(tc, 1);
-	    result->common.header.flags |= MVM_CF_USES_FSA;
+            result->common.header.flags |= MVM_CF_USES_FSA;
             result->body.num_strands     = 1;
             result->body.storage.strands[0].blob_string = orig_strand->blob_string;
             result->body.storage.strands[0].start       = orig_strand->start + start_pos;
@@ -724,13 +724,13 @@ static MVMuint16 final_strand_match_with_repetition_count(MVMThreadContext *tc, 
                 return 1;
         }
         /* If the final strand of a eq the first (and only) strand of b, we'll just add b's repetitions
-	 * (plus 1 for the strand itself) to the final strand of a's repetitions. */
+         * (plus 1 for the strand itself) to the final strand of a's repetitions. */
         else if (b->body.storage_type == MVM_STRING_STRAND && b->body.num_strands == 1) {
             MVMStringStrand *sb = &(b->body.storage.strands[0]);
             if (sa->end - sa->start == sb->end - sb->start)
                 if (MVM_string_equal(tc, string_from_strand_at_index(tc, a, a->body.num_strands - 1), string_from_strand_at_index(tc, b, 0)))
                     return b->body.storage.strands[0].repetitions + 1;
-	}
+        }
     }
     return 0;
 }
@@ -823,7 +823,7 @@ MVMString * MVM_string_concatenate(MVMThreadContext *tc, MVMString *a, MVMString
             /* We have it; just copy the strands to a new string and bump the
              * repetitions count of the last one. */
             result->body.storage.strands = allocate_strands(tc, a->body.num_strands);
-	    result->common.header.flags |= MVM_CF_USES_FSA;
+            result->common.header.flags |= MVM_CF_USES_FSA;
             copy_strands(tc, a, 0, result, 0, a->body.num_strands);
             result->body.storage.strands[a->body.num_strands - 1].repetitions += matching_repetition_count;
             result->body.num_strands = a->body.num_strands;
@@ -856,7 +856,7 @@ MVMString * MVM_string_concatenate(MVMThreadContext *tc, MVMString *a, MVMString
             /* Assemble the result. */
             result->body.num_strands = strands_a + strands_b + (renormalized_section_graphs ? 1 : 0);
             result->body.storage.strands = allocate_strands(tc, result->body.num_strands);
-	    result->common.header.flags |= MVM_CF_USES_FSA;
+            result->common.header.flags |= MVM_CF_USES_FSA;
             /* START 1 */
             if (effective_a->body.storage_type == MVM_STRING_STRAND) {
                 copy_strands(tc, effective_a, 0, result, 0, strands_a);
@@ -971,7 +971,7 @@ MVMString * MVM_string_repeat(MVMThreadContext *tc, MVMString *a, MVMint64 count
         result->body.num_graphs      = agraphs * count;
         result->body.storage_type    = MVM_STRING_STRAND;
         result->body.storage.strands = allocate_strands(tc, 1);
-	result->common.header.flags |= MVM_CF_USES_FSA;
+        result->common.header.flags |= MVM_CF_USES_FSA;
         if (a->body.storage_type == MVM_STRING_STRAND) {
             if (a->body.num_strands == 1 && a->body.storage.strands[0].repetitions == 0) {
                 copy_strands(tc, a, 0, result, 0, 1);
@@ -2145,7 +2145,7 @@ MVMString * MVM_string_flip(MVMThreadContext *tc, MVMString *s) {
         res->common.header.flags |= MVM_CF_USES_FSA;
     } else {
         MVMGrapheme32  *rbuffer;
-	if (sgraphs == 0) {
+        if (sgraphs == 0) {
             res = tc->instance->str_consts.empty;
         }
         else {
