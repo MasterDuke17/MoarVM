@@ -136,8 +136,8 @@ typedef enum {
      * tiny number of objects marked this way in a remembered set. */
     MVM_CF_NEVER_REPOSSESS = 2048,
 
-    /* Does this use the FSA? */
-    MVM_CF_USES_FSA = 4096
+    /* A flag for behavior specific to a REPR. */
+    MVM_CF_REPR_DEFINED = 4096
 } MVMCollectableFlags;
 
 #ifdef MVM_USE_OVERFLOW_SERIALIZATION_INDEX

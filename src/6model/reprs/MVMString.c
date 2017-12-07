@@ -1,4 +1,5 @@
 #include "moar.h"
+#define MVM_STRING_USES_FSA MVM_CF_REPR_DEFINED
 
 /* This representation's function pointer table. */
 static const MVMREPROps MVMString_this_repr;
@@ -29,7 +30,7 @@ static void copy_to(MVMThreadContext *tc, MVMSTable *st, void *src, MVMObject *d
         case MVM_STRING_GRAPHEME_32:
             if (dest_body->num_graphs) {
                 dest_body->storage.blob_32 = MVM_fixed_size_alloc(tc, tc->instance->fsa, dest_body->num_graphs * sizeof(MVMGrapheme32));
-                dest_root->header.flags |= MVM_CF_USES_FSA;
+                dest_root->header.flags |= MVM_STRING_USES_FSA;
                 memcpy(dest_body->storage.blob_32, src_body->storage.blob_32,
                     dest_body->num_graphs * sizeof(MVMGrapheme32));
             }
@@ -38,14 +39,14 @@ static void copy_to(MVMThreadContext *tc, MVMSTable *st, void *src, MVMObject *d
         case MVM_STRING_GRAPHEME_8:
             if (dest_body->num_graphs) {
                 dest_body->storage.blob_8 = MVM_fixed_size_alloc(tc, tc->instance->fsa, dest_body->num_graphs);
-                dest_root->header.flags |= MVM_CF_USES_FSA;
+                dest_root->header.flags |= MVM_STRING_USES_FSA;
                 memcpy(dest_body->storage.blob_8, src_body->storage.blob_8,
                     dest_body->num_graphs);
             }
             break;
         case MVM_STRING_STRAND:
             dest_body->storage.strands = MVM_fixed_size_alloc(tc, tc->instance->fsa, dest_body->num_strands * sizeof(MVMStringStrand));
-            dest_root->header.flags |= MVM_CF_USES_FSA;
+            dest_root->header.flags |= MVM_STRING_USES_FSA;
             memcpy(dest_body->storage.strands, src_body->storage.strands,
                 dest_body->num_strands * sizeof(MVMStringStrand));
             break;
@@ -68,7 +69,7 @@ static void gc_mark(MVMThreadContext *tc, MVMSTable *st, void *data, MVMGCWorkli
 /* Called by the VM in order to free memory associated with this object. */
 static void gc_free(MVMThreadContext *tc, MVMObject *obj) {
     MVMString *str = (MVMString *)obj;
-    if (obj->header.flags & MVM_CF_USES_FSA) {
+    if (obj->header.flags & MVM_STRING_USES_FSA) {
         size_t type;
         switch (str->body.storage_type) {
             case MVM_STRING_GRAPHEME_8:
