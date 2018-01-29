@@ -565,5 +565,28 @@
         (carg $0 ptr)
         (carg (const (&QUOTE MVM_reg_num64) int_sz) int)))))
 
+(template: getattr_s!
+  (dov
+    (when (^is_type_obj $1)
+      (callv (^func &MVM_exception_throw_adhoc)
+        (arglist
+          (carg (tc) ptr)
+          (carg (const (&QUOTE "Cannot look up attributes in a %s type object") ptr_sz) ptr)
+          (carg (call (^func &MVM_6model_get_debug_name)
+                  (arglist
+                    (carg (tc) ptr)
+                    (carg $1 ptr)) ptr_sz) ptr))))
+    (callv (^getf (^repr $1) MVMREPROps attr_funcs.get_attribute)
+      (arglist
+        (carg (tc) ptr)
+        (carg (^stable $1) ptr)
+        (carg $1 ptr)
+        (carg (^body $1) ptr)
+        (carg $2 ptr)
+        (carg (^cu_string $3) ptr)
+        (carg $4 int)
+        (carg $0 ptr)
+        (carg (const (&QUOTE MVM_reg_str) int_sz) int)))))
+
 (template: isnull
    (or (flagval (zr $1)) (flagval (eq $1 (^vmnull)))))
