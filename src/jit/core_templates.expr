@@ -205,6 +205,14 @@
        (carg $0 ptr)
        (carg (const (&QUOTE MVM_reg_int64) int_sz) int))))
 
+(template: atpos2d_s
+  (call (^func MVM_repr_at_pos_2d_s)
+      (arglist
+        (carg (tc) ptr)
+        (carg $1 ptr)
+        (carg $2 int)
+        (carg $3 int)) str_sz))
+
 (template: atpos2d_o
   (call (^func MVM_repr_at_pos_2d_o)
       (arglist
