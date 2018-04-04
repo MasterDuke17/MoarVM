@@ -205,6 +205,18 @@
        (carg $0 ptr)
        (carg (const (&QUOTE MVM_reg_int64) int_sz) int))))
 
+(template: atpos_s!
+  (callv
+     (^getf (^repr $1) MVMREPROps pos_funcs.at_pos)
+     (arglist
+       (carg (tc) ptr)
+       (carg (^stable $1) ptr)
+       (carg $1 ptr)
+       (carg (^body $1) ptr)
+       (carg $2 int)
+       (carg $0 ptr)
+       (carg (const (&QUOTE MVM_reg_str) int_sz) int))))
+
 (template: atpos2d_i
   (call (^func MVM_repr_at_pos_2d_i)
       (arglist
