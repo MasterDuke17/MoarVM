@@ -185,6 +185,11 @@ static void * op_to_func(MVMThreadContext *tc, MVMint16 opcode) {
     case MVM_OP_atpos_s: return MVM_repr_at_pos_s;
     case MVM_OP_atpos_o: return MVM_repr_at_pos_o;
 
+    case MVM_OP_atpos2d_i: return MVM_repr_at_pos_2d_i;
+    case MVM_OP_atpos2d_n: return MVM_repr_at_pos_2d_n;
+    case MVM_OP_atpos2d_s: return MVM_repr_at_pos_2d_s;
+    case MVM_OP_atpos2d_o: return MVM_repr_at_pos_2d_o;
+
     case MVM_OP_existspos: return MVM_repr_exists_pos;
 
     case MVM_OP_atkey_i: return MVM_repr_at_key_i;
@@ -785,6 +790,10 @@ static MVMint32 consume_reprop(MVMThreadContext *tc, MVMJitGraph *jg,
         case MVM_OP_atpos_n:
         case MVM_OP_atpos_s:
         case MVM_OP_atpos_o:
+        case MVM_OP_atpos2d_i:
+        case MVM_OP_atpos2d_n:
+        case MVM_OP_atpos2d_s:
+        case MVM_OP_atpos2d_o:
         case MVM_OP_atkey_i:
         case MVM_OP_atkey_n:
         case MVM_OP_atkey_s:
