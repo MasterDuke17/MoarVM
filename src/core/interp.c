@@ -1096,7 +1096,7 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
             {
                 MVMint64 param = MVM_args_get_optional_pos_int(tc, &tc->cur_frame->params,
                     GET_UI16(cur_op, 2));
-                if (param) {
+                if (param != NULL) {
                     GET_REG(cur_op, 0).i64 = param;
                     cur_op = bytecode_start + GET_UI32(cur_op, 4);
                 }

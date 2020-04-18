@@ -309,7 +309,7 @@ MVMint64 MVM_args_get_optional_pos_int(MVMThreadContext *tc, MVMArgProcContext *
     MVMArgInfo result;
     args_get_pos(tc, ctx, pos, MVM_ARG_OPTIONAL, result);
     autounbox(tc, MVM_CALLSITE_ARG_INT, "integer", result);
-    return result.arg.i64;
+    return result.exists ? result.arg.i64 : NULL;
 }
 MVMnum64 MVM_args_get_required_pos_num(MVMThreadContext *tc, MVMArgProcContext *ctx, MVMuint32 pos) {
     MVMArgInfo result;
