@@ -1886,6 +1886,7 @@ start:
         /* Parameters */
     case MVM_OP_param_sp:
     case MVM_OP_param_sn:
+    case MVM_OP_param_op_i:
         /* Specialized atomics */
     case MVM_OP_sp_cas_o:
     case MVM_OP_sp_atomicload_o:
@@ -1946,7 +1947,7 @@ start:
         break;
     }
         /* Unspecialized parameter access */
-    case MVM_OP_param_op_i: {
+    /*case MVM_OP_param_op_i: {
         MVMint16  dst     = ins->operands[0].reg.orig;
         MVMuint16 arg_idx = ins->operands[1].lit_ui16;
 
@@ -1965,7 +1966,7 @@ start:
                                  { MVM_JIT_LITERAL, { arg_idx } } };
         jgb_append_call_c(tc, jgb, MVM_args_get_optional_pos_obj, 3, args, MVM_JIT_RV_PTR, dst);
         break;
-    }
+    }*/
     case MVM_OP_param_rp_i: {
         MVMint16  dst     = ins->operands[0].reg.orig;
         MVMuint16 arg_idx = ins->operands[1].lit_ui16;

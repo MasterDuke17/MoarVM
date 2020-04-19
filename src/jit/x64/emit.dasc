@@ -2370,6 +2370,20 @@ void MVM_jit_emit_primitive(MVMThreadContext *tc, MVMJitCompiler *compiler, MVMJ
         | mov qword WORK[dst], RV;
         break;
     }
+    case MVM_OP_param_op_i: {
+        MVMuint16 dst = ins->operands[0].reg.orig;
+        MVMuint16 off = ins->operands[1].lit_ui16;
+        | mov ARG1, TC
+        | mov ARG2, TC:ARG1->cur_frame
+        | lea ARG2, FRAME:ARG2->params
+        | mov ARG3, off
+        | callp &MVM_args_get_optional_pos_int;
+        | test RV, RV
+        | jz >1
+        | mov qword WORK[dst], RV;
+        |1:
+        break;
+    }
     case MVM_OP_sp_cas_o: {
         MVMint16 target = ins->operands[1].reg.orig;
         MVMint16 expected = ins->operands[2].reg.orig;

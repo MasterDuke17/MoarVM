@@ -360,6 +360,7 @@ void MVM_spesh_args(MVMThreadContext *tc, MVMSpeshGraph *g, MVMCallsite *cs,
             case MVM_OP_param_op_n:
             case MVM_OP_param_op_s:
             case MVM_OP_param_op_o: {
+                break;
                 /* Optional Positional int/num/string/object */
                 MVMint16 idx = ins->operands[1].lit_i16;
                 if (idx < 0 || idx >= MAX_POS_ARGS)
