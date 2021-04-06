@@ -23,6 +23,7 @@ int MVM_dll_load(MVMThreadContext *tc, MVMString *name, MVMString *path) {
     });
 
     cpath = MVM_string_utf8_c8_encode_C_string(tc, path);
+    fprintf(stderr, "loading '%s'\n", cpath);
     lib = MVM_nativecall_load_lib(cpath);
 
     if (!lib) {
@@ -48,6 +49,7 @@ int MVM_dll_load(MVMThreadContext *tc, MVMString *name, MVMString *path) {
 }
 
 int MVM_dll_free(MVMThreadContext *tc, MVMString *name) {
+    fprintf(stderr, "freeing lib'\n");
     if (!MVM_str_hash_key_is_valid(tc, name)) {
         MVM_str_hash_key_throw_invalid(tc, name);
     }

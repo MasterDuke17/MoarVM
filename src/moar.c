@@ -170,7 +170,7 @@ MVMInstance * MVM_vm_create_instance(void) {
     MVM_fixkey_hash_build(instance->main_thread, &instance->compilee_hll_configs, sizeof(MVMHLLConfig));
 
     /* Set up DLL registry mutex. */
-    init_mutex(instance->mutex_dll_registry, "REPR registry");
+    init_mutex(instance->mutex_dll_registry, "DLL registry");
     MVM_fixkey_hash_build(instance->main_thread, &instance->dll_registry, sizeof(struct MVMDLLRegistry));
 
     /* Set up extension registry mutex. */
@@ -679,6 +679,19 @@ void MVM_vm_destroy_instance(MVMInstance *instance) {
     MVM_fixkey_hash_demolish(instance->main_thread, &instance->compilee_hll_configs);
 
     /* Clean up Hash of DLLs. */
+    uv_mutex_lock(&instance->mutex_dll_registry);
+    MVMFixKeyHashTable *const dll_registry = &instance->dll_registry;
+    MVMFixKeyHashIterator iterator = MVM_fixkey_hash_first(instance->main_thread, dll_registry);
+    while (!MVM_fixkey_hash_at_end(instance->main_thread, dll_registry, iterator)) {
+        fprintf(stderr, "freeing a dll\n");
+        struct MVMDLLRegistry *entry = MVM_fixkey_hash_current_nocheck(instance->main_thread, dll_registry, iterator);
+        if (entry && entry->lib) {
+            fprintf(stderr, "for realz\n");
+            MVM_nativecall_free_lib(entry->lib);
+        }
+        iterator = MVM_fixkey_hash_next_nocheck(instance->main_thread, dll_registry, iterator);
+    }
+    uv_mutex_unlock(&instance->mutex_dll_registry);
     uv_mutex_destroy(&instance->mutex_dll_registry);
     MVM_fixkey_hash_demolish(instance->main_thread, &instance->dll_registry);
 

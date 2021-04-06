@@ -44,6 +44,11 @@ Not all the optimisations described above are in place yet. Starting with
 */
 
 struct MVMFixKeyHashTableControl {
+#if HASH_DEBUG_ITER
+    MVMuint64 ht_id;
+    MVMuint32 serial;
+    MVMuint32 last_delete_at;
+#endif
     MVMHashNumItems cur_items;
     MVMHashNumItems max_items; /* hit this and we grow */
     MVMuint16 entry_size;
@@ -63,3 +68,52 @@ struct MVMFixKeyHashTableControl {
 struct MVMFixKeyHashTable {
     struct MVMFixKeyHashTableControl *table;
 };
+
+typedef struct {
+    MVMuint32 pos;
+#if HASH_DEBUG_ITER
+    MVMuint32 serial;
+    MVMuint64 owner;
+#endif
+}  MVMFixKeyHashIterator;
+
+#if HASH_DEBUG_ITER
+MVM_STATIC_INLINE int MVM_fixkey_hash_iterator_target_deleted(MVMThreadContext *tc,
+                                                           MVMFixKeyHashTable *hashtable,
+                                                           MVMFixKeyHashIterator iterator) {
+    /* Returns true if the hash entry that the iterator points to has been
+     * deleted (and this is the only action on the hash since the iterator was
+     * created) */
+    struct MVMFixKeyHashTableControl *control = hashtable->table;
+    return control && iterator.serial == control->serial - 1 &&
+        iterator.pos == control->last_delete_at;
+}
+#endif
+
+/* So why is this here, instead of _funcs?
+ * Because it is needed in MVM_iter_istrue_hash, which is inline in MVMIter.h
+ * So this definition has to be before that definition.
+ * In turn, various other inline functions in the reprs are used in
+ * fixkey_hash_table_funcs.h, so those declarations have to be seen already, and
+ * as the reprs headers are included as one block, *most* of the MVMFixKeyHashTable
+ * functions need to be later. */
+
+MVM_STATIC_INLINE int MVM_fixkey_hash_at_end(MVMThreadContext *tc,
+                                           MVMFixKeyHashTable *hashtable,
+                                           MVMFixKeyHashIterator iterator) {
+#if HASH_DEBUG_ITER
+    struct MVMFixKeyHashTableControl *control = hashtable->table;
+    MVMuint64 ht_id = control ? control->ht_id : 0;
+    if (iterator.owner != ht_id) {
+        MVM_oops(tc, "MVM_fixkey_hash_at_end called with an iterator from a different hash table: %016" PRIx64 " != %016" PRIx64,
+                 iterator.owner, ht_id);
+    }
+    MVMuint32 serial = control ? control->serial : 0;
+    if (iterator.serial != serial
+        || MVM_fixkey_hash_iterator_target_deleted(tc, hashtable, iterator)) {
+        MVM_oops(tc, "MVM_fixkey_hash_at_end called with an iterator with the wrong serial number: %u != %u",
+                 iterator.serial, serial);
+    }
+#endif
+    return iterator.pos == 0;
+}

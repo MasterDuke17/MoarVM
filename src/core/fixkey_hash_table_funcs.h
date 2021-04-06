@@ -18,6 +18,10 @@ MVM_STATIC_INLINE MVMuint32 MVM_fixkey_hash_official_size(const struct MVMFixKey
 MVM_STATIC_INLINE MVMuint32 MVM_fixkey_hash_allocated_items(const struct MVMFixKeyHashTableControl *control) {
     return MVM_fixkey_hash_official_size(control) + control->max_probe_distance_limit - 1;
 }
+MVM_STATIC_INLINE MVMuint32 MVM_fixkey_hash_kompromat(const struct MVMFixKeyHashTableControl *control) {
+    assert(!(control->cur_items == 0 && control->max_items == 0));
+    return MVM_fixkey_hash_official_size(control) + control->max_probe_distance - 1;
+}
 MVM_STATIC_INLINE MVMuint32 MVM_fixkey_hash_max_items(const struct MVMFixKeyHashTableControl *control) {
     return MVM_fixkey_hash_official_size(control) * MVM_FIXKEY_HASH_LOAD_FACTOR;
 }
@@ -131,3 +135,161 @@ MVM_STATIC_INLINE void *MVM_fixkey_hash_fetch_nocheck(MVMThreadContext *tc,
 void *MVM_fixkey_hash_lvalue_fetch_nocheck(MVMThreadContext *tc,
                                            MVMFixKeyHashTable *hashtable,
                                            MVMString *key);
+/* iterators are stored as unsigned values, metadata index plus one.
+ * This is clearly an internal implementation detail. Don't cheat.
+ */
+
+/* Only call this if MVM_fixkey_hash_at_end returns false. */
+MVM_STATIC_INLINE MVMFixKeyHashIterator MVM_fixkey_hash_next_nocheck(MVMThreadContext *tc,
+                                                               MVMFixKeyHashTable *hashtable,
+                                                               MVMFixKeyHashIterator iterator) {
+    struct MVMFixKeyHashTableControl *control = hashtable->table;
+    /* Whilst this looks like it can be optimised to word at a time skip ahead.
+     * (Beware of endianness) it isn't easy *yet*, because one can overrun the
+     * allocated buffer, and that makes ASAN very excited. */
+    while (--iterator.pos > 0) {
+        if (MVM_fixkey_hash_metadata(control)[iterator.pos - 1]) {
+            return iterator;
+        }
+    }
+    return iterator;
+}
+
+MVM_STATIC_INLINE MVMFixKeyHashIterator MVM_fixkey_hash_next(MVMThreadContext *tc,
+                                                       MVMFixKeyHashTable *hashtable,
+                                                       MVMFixKeyHashIterator iterator) {
+#if HASH_DEBUG_ITER
+    struct MVMFixKeyHashTableControl *control = hashtable->table;
+    if (iterator.owner != control->ht_id) {
+        MVM_oops(tc, "MVM_fixkey_hash_next called with an iterator from a different hash table: %016" PRIx64 " != %016" PRIx64,
+                 iterator.owner, control->ht_id);
+    }
+    /* "the usual case" is that the iterator serial number  matches the hash
+     * serial number.
+     * As we permit deletes at the current iterator, we also track whether the
+     * last mutation on the hash was a delete, and if so record where. Hence,
+     * if the hash serial has advanced by one, and the last delete was at this
+     * iterator's current bucket position, that's OK too. */
+    if (!(iterator.serial == control->serial
+          || (iterator.serial == control->serial - 1 &&
+              iterator.pos == control->last_delete_at))) {
+        MVM_oops(tc, "MVM_fixkey_hash_next called with an iterator with the wrong serial number: %u != %u",
+                 iterator.serial, control->serial);
+    }
+#endif
+
+    if (iterator.pos == 0) {
+        MVM_oops(tc, "Calling fixkey_hash_next when iterator is already at the end");
+    }
+
+    return MVM_fixkey_hash_next_nocheck(tc, hashtable, iterator);
+}
+
+MVM_STATIC_INLINE MVMFixKeyHashIterator MVM_fixkey_hash_first(MVMThreadContext *tc,
+                                                        MVMFixKeyHashTable *hashtable) {
+    struct MVMFixKeyHashTableControl *control = hashtable->table;
+    MVMFixKeyHashIterator iterator;
+
+    if (!control) {
+        /* This hash has not even been built yet. We return an iterator that is
+         * already "at the end" */
+#if HASH_DEBUG_ITER
+        iterator.owner = iterator.serial = 0;
+#endif
+        iterator.pos = 0;
+        return iterator;
+    }
+
+#if HASH_DEBUG_ITER
+    iterator.owner = control->ht_id;
+    iterator.serial = control->serial;
+#endif
+
+    if (control->cur_items == 0) {
+        /* The hash is empty. No need to do the work to find the "first" item
+         * when we know that there are none. Return an iterator at the end. */
+        iterator.pos = 0;
+        return iterator;
+    }
+
+    iterator.pos = MVM_fixkey_hash_kompromat(control);
+
+    if (MVM_fixkey_hash_metadata(control)[iterator.pos - 1]) {
+        return iterator;
+    }
+    return MVM_fixkey_hash_next(tc, hashtable, iterator);
+}
+
+MVM_STATIC_INLINE MVMFixKeyHashIterator MVM_fixkey_hash_start(MVMThreadContext *tc,
+                                                        MVMFixKeyHashTable *hashtable) {
+    struct MVMFixKeyHashTableControl *control = hashtable->table;
+    MVMFixKeyHashIterator retval;
+    if (MVM_UNLIKELY(!control)) {
+#if HASH_DEBUG_ITER
+        retval.owner = retval.serial = 0;
+#endif
+        retval.pos = 1;
+        return retval;
+    }
+
+#if HASH_DEBUG_ITER
+    retval.owner = control->ht_id;
+    retval.serial = control->serial;
+#endif
+    retval.pos = MVM_fixkey_hash_kompromat(control) + 1;
+    return retval;
+}
+
+MVM_STATIC_INLINE int MVM_fixkey_hash_at_start(MVMThreadContext *tc,
+                                            MVMFixKeyHashTable *hashtable,
+                                            MVMFixKeyHashIterator iterator) {
+    struct MVMFixKeyHashTableControl *control = hashtable->table;
+    if (MVM_UNLIKELY(!control)) {
+        return iterator.pos == 1;
+    }
+#if HASH_DEBUG_ITER
+    if (iterator.owner != control->ht_id) {
+        MVM_oops(tc, "MVM_fixkey_hash_at_start called with an iterator from a different hash table: %016" PRIx64 " != %016" PRIx64,
+                 iterator.owner, control->ht_id);
+    }
+    if (iterator.serial != control->serial) {
+        MVM_oops(tc, "MVM_fixkey_hash_at_start called with an iterator with the wrong serial number: %u != %u",
+                 iterator.serial, control->serial);
+    }
+#endif
+    return iterator.pos == MVM_fixkey_hash_kompromat(control) + 1;
+}
+
+/* Only call this if MVM_fixkey_hash_at_end returns false. */
+MVM_STATIC_INLINE void *MVM_fixkey_hash_current_nocheck(MVMThreadContext *tc,
+                                                     MVMFixKeyHashTable *hashtable,
+                                                     MVMFixKeyHashIterator iterator) {
+    struct MVMFixKeyHashTableControl *control = hashtable->table;
+    assert(MVM_fixkey_hash_metadata(control)[iterator.pos - 1]);
+    return MVM_fixkey_hash_entries(control) - control->entry_size * (iterator.pos - 1);
+}
+
+/* FIXME - this needs a better name: */
+MVM_STATIC_INLINE void *MVM_fixkey_hash_current(MVMThreadContext *tc,
+                                             MVMFixKeyHashTable *hashtable,
+                                             MVMFixKeyHashIterator iterator) {
+#if HASH_DEBUG_ITER
+    const struct MVMFixKeyHashTableControl *control = hashtable->table;
+    if (iterator.owner != control->ht_id) {
+        MVM_oops(tc, "MVM_fixkey_hash_current called with an iterator from a different hash table: %016" PRIx64 " != %016" PRIx64,
+                 iterator.owner, control->ht_id);
+    }
+    if (iterator.serial != control->serial) {
+        MVM_oops(tc, "MVM_fixkey_hash_current called with an iterator with the wrong serial number: %u != %u",
+                 iterator.serial, control->serial);
+    }
+#endif
+
+    /* This is MVM_fixkey_hash_at_end without the HASH_DEBUG_ITER checks duplicated. */
+    if (MVM_UNLIKELY(iterator.pos == 0)) {
+        /* Bother. This seems to be part of our de-facto API. */
+        return NULL;
+    }
+
+    return MVM_fixkey_hash_current_nocheck(tc, hashtable, iterator);
+}
