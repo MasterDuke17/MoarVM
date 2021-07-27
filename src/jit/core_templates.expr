@@ -1055,6 +1055,13 @@
       (carg $2 ptr)
       (carg $1 int)) ptr_sz))
 
+(template: box_n
+  (call (^func &MVM_repr_box_num)
+    (arglist
+      (carg (tc) ptr)
+      (carg $2 ptr)
+      (carg $1 num)) ptr_sz))
+
 (template: box_s
   (call (^func &MVM_repr_box_str)
     (arglist
@@ -1083,6 +1090,12 @@
       (carg (^stable $1) ptr)
       (carg $1 ptr)
       (carg (^body $1) ptr)) int_sz))
+
+(template: unbox_n
+  (calln (^func &MVM_repr_get_num)
+    (arglist
+      (carg (tc) ptr)
+      (carg $1 ptr))))
 
 (template: atpos_i!
   (callv (^getf (^repr $1) MVMREPROps pos_funcs.at_pos)
