@@ -696,6 +696,41 @@ MVM_JIT_TILE_DECL(sub_load_idx) {
 }
 
 
+MVM_JIT_TILE_DECL(shl_reg) {
+    MVMint8 reg[2];
+    ensure_two_operand_pre(tc, compiler, tile, reg);
+    | shl Rq(reg[0]), Rb(reg[1]);
+    ensure_two_operand_post(tc, compiler, tile, reg);
+}
+
+MVM_JIT_TILE_DECL(shr_reg) {
+    MVMint8 reg[2];
+    ensure_two_operand_pre(tc, compiler, tile, reg);
+    | sar Rq(reg[0]), Rb(reg[1]);
+    ensure_two_operand_post(tc, compiler, tile, reg);
+}
+
+MVM_JIT_TILE_DECL(shl_const) {
+    MVMint8 out = tile->values[0];
+    MVMint8 in1  = tile->values[1];
+    MVMint32 val = tile->args[0];
+    MVMint32 sz  = tile->args[1];
+    if (out != in1) {
+        | mov Rb(out), Rb(in1);
+    }
+    | shl Rb(out), val;
+}
+
+MVM_JIT_TILE_DECL(shr_const) {
+    MVMint8 out = tile->values[0];
+    MVMint8 in1  = tile->values[1];
+    MVMint32 val = tile->args[0];
+    MVMint32 sz  = tile->args[1];
+    if (out != in1) {
+        | mov Rb(out), Rb(in1);
+    }
+    | sar Rb(out), val;
+}
 
 
 MVM_JIT_TILE_DECL(test) {

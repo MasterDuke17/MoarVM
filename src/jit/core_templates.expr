@@ -217,6 +217,9 @@
 (template: bxor_i (xor $1 $2))
 (template: bnot_i (not $1))
 
+(template: blshift_i (shl $1 $2))
+(template: brshift_i (shr $1 $2))
+
 (template: not_i (flagval (zr $1)))
 
 (template: coerce_is

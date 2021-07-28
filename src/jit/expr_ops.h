@@ -44,6 +44,9 @@
     /* type conversion */ \
     _(SCAST, 1, 2),   \
     _(UCAST, 1, 2),   \
+    /* shifts */ \
+    _(SHL, 2, 0), \
+    _(SHR, 2, 0), \
     /* integer arithmetic */ \
     _(ADD, 2, 0), \
     _(SUB, 2, 0), \

@@ -58,7 +58,7 @@ my %OPERATOR_TYPES = (
     (map { $_ => 'void' } qw(store store_num discard dov when ifv branch mark callv guard)),
     (map { $_ => 'flag' } qw(lt le eq ne ge gt nz zr all any)),
     (map { $_ => 'num' }  qw(const_num load_num calln)),
-    (map { $_ => '?' }    qw(if copy do add sub mul)),
+    (map { $_ => '?' }    qw(if copy do add sub mul shl shr)),
     qw(arglist) x 2,
     qw(carg) x 2,
 );
@@ -84,7 +84,7 @@ my %OPERAND_TYPES = (
     guard => 'void',
     # anything on numbers is polymorphic,
     # because the output type is the input type
-    map(($_ => '?'), qw(lt le eq ne ge gt nz zr add sub mul)),
+    map(($_ => '?'), qw(lt le eq ne ge gt nz zr add sub mul shl shr)),
 );
 
 # which list item is the size

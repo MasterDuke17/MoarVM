@@ -68,6 +68,16 @@
 (tile: cast_unsigned_load_addr (ucast (load (addr reg $ofs) $src_sz) $to_size $from_size) reg 5)
 
 #
+# SHIFTS
+#
+
+(tile: shl_reg       (add reg reg) reg 2)
+(tile: shl_const     (shl reg (const $val $size)) reg 3)
+
+(tile: shr_reg       (add reg reg) reg 2)
+(tile: shr_const     (shr reg (const $val $size)) reg 3)
+
+#
 # ARITHMETIC
 #
 
