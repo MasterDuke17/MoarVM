@@ -39,7 +39,7 @@ MVM_STATIC_INLINE void * MVM_realloc(void *p, size_t size) {
 
 MVM_STATIC_INLINE void * MVM_recalloc(void *p, size_t old_size, size_t size) {
 #ifdef MVM_USE_MIMALLOC
-    void *ptr = mi_realloc(p, size);
+    void *ptr = mi_rezalloc(p, size);
 #else
     void *ptr = realloc(p, size);
 #endif
@@ -48,8 +48,10 @@ MVM_STATIC_INLINE void * MVM_recalloc(void *p, size_t old_size, size_t size) {
         if (!ptr)
             MVM_panic_allocation_failed(size);
 
+#ifndef MVM_USE_MIMALLOC
         if (size > old_size)
             memset((char *)ptr + old_size, 0, size - old_size);
+#endif
     }
 
     return ptr;
