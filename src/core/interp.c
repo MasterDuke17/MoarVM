@@ -738,11 +738,29 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 goto NEXT;
             }
             OP(gcd_i): {
-                MVMint64 a = labs(GET_REG(cur_op, 2).i64), b = labs(GET_REG(cur_op, 4).i64), c;
-                while ( b != 0 ) {
-                    c = a % b; a = b; b = c;
+                MVMint64 a = GET_REG(cur_op, 2).i64, b = GET_REG(cur_op, 4).i64;
+                if (a == 0) {
+                    GET_REG(cur_op, 0).i64 = b;
+                } 
+                else if (b == 0) {
+                    GET_REG(cur_op, 0).i64 = a;
                 }
-                GET_REG(cur_op, 0).i64 = a;
+                else {
+                    int az = __builtin_ctz(a);
+                    int bz = __builtin_ctz(b);
+                    int shift = MIN(az, bz);
+                    b >>= bz;
+
+                    while (a != 0) {
+                        a >>= az;
+                        MVMint64 diff = b - a;
+                        az = __builtin_ctz(diff);
+                        b = MIN(a, b);
+                        a = labs(diff);
+                    }
+
+                    GET_REG(cur_op, 0).i64 = b << shift;
+                }
                 cur_op += 6;
                 goto NEXT;
             }
