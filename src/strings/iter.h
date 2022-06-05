@@ -186,6 +186,16 @@ MVM_STATIC_INLINE MVMGrapheme32 MVM_string_gi_get_grapheme(MVMThreadContext *tc,
     }
 }
 
+/* Gets the next grapheme when we know we have utf8. */
+MVM_STATIC_INLINE MVMGrapheme32 MVM_string_gi_get_utf8_grapheme(MVMThreadContext *tc, MVMGraphemeIter *gi) {
+        if (gi->pos < gi->end) {
+            return gi->active_blob.blob_32[gi->pos++];
+        }
+        else {
+            MVM_exception_throw_adhoc(tc, "Iteration past end of grapheme iterator");
+        }
+}
+
 
 /* Returns the codepoint without doing checks, for internal VM use only. */
 MVM_STATIC_INLINE MVMGrapheme32 MVM_string_get_grapheme_at_nocheck(MVMThreadContext *tc, MVMString *a, MVMint64 index) {
@@ -309,6 +319,57 @@ MVM_STATIC_INLINE MVMCodepoint MVM_string_ci_get_codepoint(MVMThreadContext *tc,
     /* Otherwise, proceed to the next grapheme. */
     else {
         MVMGrapheme32 g = MVM_string_gi_get_grapheme(tc, &(ci->gi));
+#ifdef _WIN32
+        if (ci->translate_newlines && g == '\n')
+            g = MVM_nfg_crlf_grapheme(tc);
+#endif
+        if (g >= 0) {
+            /* It's not a synthetic, so we're done. */
+            result = (MVMCodepoint)g;
+        }
+        else {
+            /* It's a synthetic. Look it up. */
+            MVMNFGSynthetic *synth = MVM_nfg_get_synthetic_info(tc, g);
+            /* If we have pass_utfc8_synthetics set and it's a utf_c8 codepoint
+             * pass it back unchanged */
+            if (ci->pass_utfc8_synthetics && synth->is_utf8_c8) {
+                result = g;
+            }
+            else {
+                /* Set up the iterator so in the next iteration we will start to
+                * hand back codepoints. */
+                ci->synth_codes         = synth->codes + 1;
+                ci->visited_synth_codes = 0;
+                /* Emulate num_combs and subtract one from num_codes */
+                ci->total_synth_codes   = synth->num_codes - 1;
+
+                /* Result is the first codepoint of the `codes` array */
+                result = synth->codes[0];
+            }
+        }
+    }
+
+    return result;
+}
+/* Gets the next code point when we know we have utf8. */
+MVM_STATIC_INLINE MVMCodepoint MVM_string_ci_get_utf8_codepoint(MVMThreadContext *tc, MVMCodepointIter *ci) {
+    MVMCodepoint result;
+
+    /* Do we have combiners from a synthetic to return? */
+    if (ci->synth_codes) {
+        /* Take the current combiner as the result. */
+        result = ci->synth_codes[ci->visited_synth_codes];
+
+        /* If we've seen all of the synthetics, clear up so we'll take another
+         * grapheme next time around. */
+        ci->visited_synth_codes++;
+        if (ci->visited_synth_codes == ci->total_synth_codes)
+            ci->synth_codes = NULL;
+    }
+
+    /* Otherwise, proceed to the next grapheme. */
+    else {
+        MVMGrapheme32 g = MVM_string_gi_get_utf8_grapheme(tc, &(ci->gi));
 #ifdef _WIN32
         if (ci->translate_newlines && g == '\n')
             g = MVM_nfg_crlf_grapheme(tc);

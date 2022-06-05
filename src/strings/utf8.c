@@ -579,28 +579,48 @@ char * MVM_string_utf8_encode_substr(MVMThreadContext *tc,
 
     /* Iterate the codepoints and encode them. */
     MVM_string_ci_init(tc, &ci, str, translate_newlines, 0);
-    while (MVM_string_ci_has_more(tc, &ci)) {
-        MVMint32 bytes;
-        MVMCodepoint cp = MVM_string_ci_get_codepoint(tc, &ci);
-        if (result_pos >= result_limit) {
-            result_limit *= 2;
-            result = MVM_realloc(result, result_limit + 4);
-        }
-        bytes = utf8_encode(result + result_pos, cp);
-        if (bytes)
-            result_pos += bytes;
-        else if (replacement) {
-            if (repl_length >= result_limit || result_pos >= result_limit - repl_length) {
-                result_limit += repl_length;
+    if (str->body.storage_type == MVM_STRING_GRAPHEME_32 && !replacement) {
+        while (MVM_string_ci_has_more(tc, &ci)) {
+            MVMint32 bytes;
+            MVMCodepoint cp = MVM_string_ci_get_utf8_codepoint(tc, &ci);
+            if (result_pos >= result_limit) {
+                result_limit *= 2;
                 result = MVM_realloc(result, result_limit + 4);
             }
-            memcpy(result + result_pos, repl_bytes, repl_length);
-            result_pos += repl_length;
+            bytes = utf8_encode(result + result_pos, cp);
+            if (bytes)
+                result_pos += bytes;
+            else {
+                MVM_free(result);
+                MVM_free(repl_bytes);
+                MVM_string_utf8_throw_encoding_exception(tc, cp);
+            }
         }
-        else {
-            MVM_free(result);
-            MVM_free(repl_bytes);
-            MVM_string_utf8_throw_encoding_exception(tc, cp);
+    }
+    else {
+        while (MVM_string_ci_has_more(tc, &ci)) {
+            MVMint32 bytes;
+            MVMCodepoint cp = MVM_string_ci_get_codepoint(tc, &ci);
+            if (result_pos >= result_limit) {
+                result_limit *= 2;
+                result = MVM_realloc(result, result_limit + 4);
+            }
+            bytes = utf8_encode(result + result_pos, cp);
+            if (bytes)
+                result_pos += bytes;
+            else if (replacement) {
+                if (repl_length >= result_limit || result_pos >= result_limit - repl_length) {
+                    result_limit += repl_length;
+                    result = MVM_realloc(result, result_limit + 4);
+                }
+                memcpy(result + result_pos, repl_bytes, repl_length);
+                result_pos += repl_length;
+            }
+            else {
+                MVM_free(result);
+                MVM_free(repl_bytes);
+                MVM_string_utf8_throw_encoding_exception(tc, cp);
+            }
         }
     }
 
