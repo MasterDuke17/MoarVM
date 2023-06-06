@@ -695,7 +695,7 @@ static const void * const LABELS[] = {
     &&OP_ctxcode,
     &&OP_isrwcont,
     &&OP_fc,
-    &&OP_DEPRECATED_25,
+    &&OP_sha1_string_storage,
     &&OP_atpos3d_u,
     &&OP_encoderep,
     &&OP_istty_fh,

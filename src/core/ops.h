@@ -695,7 +695,7 @@
 #define MVM_OP_ctxcode 691
 #define MVM_OP_isrwcont 692
 #define MVM_OP_fc 693
-#define MVM_OP_DEPRECATED_25 694
+#define MVM_OP_sha1_string_storage 694
 #define MVM_OP_atpos3d_u 695
 #define MVM_OP_encoderep 696
 #define MVM_OP_istty_fh 697

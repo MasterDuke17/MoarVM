@@ -3210,3 +3210,35 @@ MVMString * MVM_sha1(MVMThreadContext *tc, MVMString *str) {
     MVM_free(utf8_string);
     return MVM_string_ascii_decode(tc, tc->instance->VMString, output, 40);
 }
+
+MVMString * MVM_sha1_string_storage(MVMThreadContext *tc, MVMString *str) {
+    /* MVMGrapheme32 is four times the size of MVMGrapheme8 and MVMGraphemeASCII,
+     * so it's actually faster to utf8 encode it and then hash the (likely) smaller
+     * resulting bytes. */
+    if (str->body.storage_type == MVM_STRING_GRAPHEME_32) {
+        return MVM_sha1(tc, str);
+    }
+
+    /* Compute its SHA-1 and encode it. */
+    SHA1Context      context;
+    char          output[80];
+    SHA1Init(&context);
+    if (str->body.storage_type != MVM_STRING_STRAND) {
+        SHA1Update(&context, (unsigned char*) str->body.storage.any, str->body.num_graphs);
+    }
+    else {
+        for (int i = 0; i < str->body.num_strands; i++) {
+            MVMStringStrand strand = str->body.storage.strands[i];
+            if (strand.blob_string->body.storage_type == MVM_STRING_GRAPHEME_32) {
+                return MVM_sha1(tc, str);
+            }
+            for (unsigned int j = 0; j < strand.repetitions; j++) {
+                SHA1Update(&context, (unsigned char*) ((MVMint8 *)strand.blob_string->body.storage.any + strand.start), strand.end - strand.start);
+            }
+        }
+    }
+    SHA1Final(&context, output);
+
+    /* Put result into a new MVMString. */
+    return MVM_string_ascii_decode(tc, tc->instance->VMString, output, 40);
+}

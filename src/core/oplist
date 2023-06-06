@@ -747,7 +747,7 @@ numdimensions       w(int64) r(obj) :pure :specializable
 ctxcode             w(obj) r(obj)
 isrwcont            w(int64) r(obj) :pure :specializable
 fc                  w(str) r(str) :pure
-DEPRECATED_25       r(obj) r(obj)
+sha1_string_storage  w(str) r(str) :pure
 atpos3d_u           w(uint64) r(obj) r(int64) r(int64) r(int64) :pure :specializable
 encoderep           w(obj) r(str) r(str) r(str) r(obj)
 istty_fh            w(int64) r(obj) :pure

@@ -1806,6 +1806,12 @@
       (carg (tc) ptr)
       (carg $1   ptr)) ptr_sz))
 
+(template: sha1_string_storage
+  (call (^func &MVM_sha1_string_storage)
+    (arglist
+      (carg (tc) ptr)
+      (carg $1   ptr)) ptr_sz))
+
 (template: createsc
   (call (^func &MVM_sc_create)
     (arglist

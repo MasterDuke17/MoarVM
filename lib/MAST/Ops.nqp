@@ -3417,8 +3417,8 @@ BEGIN {
     65,
     58,
     57,
-    65,
-    65,
+    58,
+    57,
     162,
     65,
     33,
@@ -4460,6 +4460,7 @@ BEGIN {
     'ctxcode', 691,
     'isrwcont', 692,
     'fc', 693,
+    'sha1_string_storage', 694,
     'atpos3d_u', 695,
     'encoderep', 696,
     'istty_fh', 697,
@@ -5233,6 +5234,7 @@ BEGIN {
     'ctxcode',
     'isrwcont',
     'fc',
+    'sha1_string_storage',
     'atpos3d_u',
     'encoderep',
     'istty_fh',
@@ -10260,6 +10262,13 @@ BEGIN {
         my $bytecode := $frame.bytecode;
         my uint $elems := nqp::elems($bytecode);
         nqp::writeuint($bytecode, $elems, 693, 5);
+        my uint $index0 := nqp::unbox_u($op0); nqp::writeuint($bytecode, nqp::add_i($elems, 2), $index0, 5);
+        my uint $index1 := nqp::unbox_u($op1); nqp::writeuint($bytecode, nqp::add_i($elems, 4), $index1, 5);
+    },
+    'sha1_string_storage', sub ($frame, $op0, $op1) {
+        my $bytecode := $frame.bytecode;
+        my uint $elems := nqp::elems($bytecode);
+        nqp::writeuint($bytecode, $elems, 694, 5);
         my uint $index0 := nqp::unbox_u($op0); nqp::writeuint($bytecode, nqp::add_i($elems, 2), $index0, 5);
         my uint $index1 := nqp::unbox_u($op1); nqp::writeuint($bytecode, nqp::add_i($elems, 4), $index1, 5);
     },

@@ -2864,6 +2864,11 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                     GET_REG(cur_op, 2).s);
                 cur_op += 4;
                 goto NEXT;
+            OP(sha1_string_storage):
+                GET_REG(cur_op, 0).s = MVM_sha1_string_storage(tc,
+                    GET_REG(cur_op, 2).s);
+                cur_op += 4;
+                goto NEXT;
             OP(createsc):
                 GET_REG(cur_op, 0).o = MVM_sc_create(tc,
                     GET_REG(cur_op, 2).s);
@@ -6831,8 +6836,6 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 goto NEXT;
             /* The compiler compiles faster if all deprecated are together and at the end
              * even though the op numbers are technically out of order. */
-            OP(DEPRECATED_25):
-                MVM_exception_throw_adhoc(tc, "The setinputlineseps op was removed in MoarVM 2017.06.");
             OP(DEPRECATED_27):
                 MVM_exception_throw_adhoc(tc, "The slurp op was removed in MoarVM 2017.06.");
             OP(DEPRECATED_28):

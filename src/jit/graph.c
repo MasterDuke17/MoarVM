@@ -439,6 +439,7 @@ static void * op_to_func(MVMThreadContext *tc, MVMint16 opcode) {
     case MVM_OP_loadlib: return MVM_dll_load;
 
     case MVM_OP_sha1: return MVM_sha1;
+    case MVM_OP_sha1_string_storage: return MVM_sha1_string_storage;
 
     case MVM_OP_loadext: return MVM_ext_load;
 
@@ -4016,6 +4017,7 @@ static MVMint32 consume_ins(MVMThreadContext *tc, MVMJitGraph *jg,
         jg_append_call_c(tc, jg, op_to_func(tc, op), 3, args, MVM_JIT_RV_VOID, -1);
         break;
     }
+    case MVM_OP_sha1_string_storage:
     case MVM_OP_sha1: {
         MVMint16 dst = ins->operands[0].reg.orig;
         MVMint16 str = ins->operands[1].reg.orig;
