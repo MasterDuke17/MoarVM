@@ -486,13 +486,10 @@ char * MVM_bytecode_dump(MVMThreadContext *tc, MVMCompUnit *cu) {
     }
     for (k = 0; k < cu->body.num_frames; k++) {
         MVMStaticFrame *frame = get_frame(tc, cu, k);
-        char *cuuid;
         char *fname;
-        cuuid = MVM_string_utf8_encode_C_string(tc, frame->body.cuuid);
         fname = MVM_string_utf8_encode_C_string(tc, frame->body.name);
         a("  Frame_%u :\n", k);
-        a("    cuuid : %s\n", cuuid);
-        MVM_free(cuuid);
+        a("    cuuid : %lu\n", frame->body.cuuid);
         a("    name : %s\n", fname);
         MVM_free(fname);
         for (j = 0; j < cu->body.num_frames; j++) {

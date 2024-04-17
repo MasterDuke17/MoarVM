@@ -2352,7 +2352,6 @@ static MVMint32 request_object_metadata(MVMThreadContext *dtc, cmp_ctx_t *ctx, r
         MVMuint16 flag_idx;
         MVMuint16 flag_count = cs->flag_count;
         char *name = MVM_string_utf8_encode_C_string(dtc, frame->static_info->body.name);
-        char *cuuid = MVM_string_utf8_encode_C_string(dtc, frame->static_info->body.cuuid);
 
         slots += 8;
         slots += 3; /* features */
@@ -2370,7 +2369,7 @@ static MVMint32 request_object_metadata(MVMThreadContext *dtc, cmp_ctx_t *ctx, r
         cmp_write_str(ctx, "frame_name", 10);
         cmp_write_str(ctx, name, strlen(name));
         cmp_write_str(ctx, "frame_cuuid", 11);
-        cmp_write_str(ctx, cuuid, strlen(cuuid));
+        cmp_write_int(ctx, frame->static_info->body.cuuid);
 
         cmp_write_str(ctx, "frame_num_locals", 16);
         cmp_write_int(ctx, frame->static_info->body.num_locals);
@@ -2417,7 +2416,6 @@ static MVMint32 request_object_metadata(MVMThreadContext *dtc, cmp_ctx_t *ctx, r
 
 
         MVM_free(name);
-        MVM_free(cuuid);
 
         write_object_features(dtc, ctx, 0, 0, 0);
     }

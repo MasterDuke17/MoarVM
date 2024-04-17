@@ -79,7 +79,7 @@ static void * unmarshal_callback(MVMThreadContext *tc, MVMCode *callback, MVMObj
         return NULL;
 
     /* Try to locate existing cached callback info. */
-    cuid = callback->body.sf->body.cuuid;
+    cuid = MVM_coerce_i_s(tc, callback->body.sf->body.cuuid);
     if (!MVM_str_hash_entry_size(tc, &tc->native_callback_cache)) {
         MVM_str_hash_build(tc, &tc->native_callback_cache, sizeof(MVMNativeCallbackCacheHead), 0);
     }

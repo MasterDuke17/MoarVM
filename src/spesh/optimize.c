@@ -13,27 +13,23 @@ static void log_inline(MVMThreadContext *tc, MVMSpeshGraph *g, MVMStaticFrame *t
                        char *no_inline_reason, MVMint32 unspecialized, const MVMOpInfo *no_inline_info) {
     if (tc->instance->spesh_inline_log) {
         char *c_name_i = MVM_string_utf8_encode_C_string(tc, target_sf->body.name);
-        char *c_cuid_i = MVM_string_utf8_encode_C_string(tc, target_sf->body.cuuid);
         char *c_name_t = MVM_string_utf8_encode_C_string(tc, g->sf->body.name);
-        char *c_cuid_t = MVM_string_utf8_encode_C_string(tc, g->sf->body.cuuid);
         if (inline_graph) {
-            fprintf(stderr, "Can inline %s%s (%s) with bytecode size %u into %s (%s)\n",
+            fprintf(stderr, "Can inline %s%s (%lu) with bytecode size %u into %s (%lu)\n",
                 unspecialized ? "unspecialized " : "",
-                c_name_i, c_cuid_i,
-                bytecode_size, c_name_t, c_cuid_t);
+                c_name_i, target_sf->body.cuuid,
+                bytecode_size, c_name_t, g->sf->body.cuuid);
         }
         else {
-            fprintf(stderr, "Can NOT inline %s (%s) with bytecode size %u into %s (%s): %s",
-                c_name_i, c_cuid_i, bytecode_size, c_name_t, c_cuid_t, no_inline_reason);
+            fprintf(stderr, "Can NOT inline %s (%lu) with bytecode size %u into %s (%lu): %s",
+                c_name_i, target_sf->body.cuuid, bytecode_size, c_name_t, g->sf->body.cuuid, no_inline_reason);
             if (no_inline_info) {
                 fprintf(stderr, " - ins: %s", no_inline_info->name);
             }
             fprintf(stderr, "\n");
         }
         MVM_free(c_name_i);
-        MVM_free(c_cuid_i);
         MVM_free(c_name_t);
-        MVM_free(c_cuid_t);
     }
     if (inline_graph && MVM_spesh_debug_enabled(tc)) {
         char *dump = MVM_spesh_dump(tc, inline_graph);
@@ -1572,7 +1568,6 @@ static void optimize_runbytecode(MVMThreadContext *tc, MVMSpeshGraph *g, MVMSpes
 
             /* In debug mode, annotate what we inlined. */
             if (MVM_spesh_debug_enabled(tc)) {
-                char *cuuid_cstr = MVM_string_utf8_encode_C_string(tc, target_sf->body.cuuid);
                 char *name_cstr  = MVM_string_utf8_encode_C_string(tc, target_sf->body.name);
                 MVMSpeshBB *pointer = bb->succ[0];
                 while (!pointer->first_ins && pointer->num_succ > 0) {
@@ -1580,10 +1575,9 @@ static void optimize_runbytecode(MVMThreadContext *tc, MVMSpeshGraph *g, MVMSpes
                 }
                 if (pointer->first_ins)
                     MVM_spesh_graph_add_comment(tc, g, pointer->first_ins,
-                        "inline of '%s' (%s) candidate %d",
-                        name_cstr, cuuid_cstr,
+                        "inline of '%s' (%lu) candidate %d",
+                        name_cstr, target_sf->body.cuuid,
                         spesh_cand);
-                MVM_free(cuuid_cstr);
                 MVM_free(name_cstr);
             }
         }
@@ -1594,15 +1588,13 @@ static void optimize_runbytecode(MVMThreadContext *tc, MVMSpeshGraph *g, MVMSpes
 
             /* Maybe add inline blocking reason as a comment also. */
             if (MVM_spesh_debug_enabled(tc)) {
-                char *cuuid_cstr = MVM_string_utf8_encode_C_string(tc, target_sf->body.cuuid);
                 char *name_cstr  = MVM_string_utf8_encode_C_string(tc, target_sf->body.name);
                 MVM_spesh_graph_add_comment(tc, g, ins,
-                    "could not inline '%s' (%s) candidate %d: %s",
-                    name_cstr, cuuid_cstr, spesh_cand, no_inline_reason);
+                    "could not inline '%s' (%lu) candidate %d: %s",
+                    name_cstr, target_sf->body.cuuid, spesh_cand, no_inline_reason);
                 if (no_inline_info)
                     MVM_spesh_graph_add_comment(tc, g, ins, "inline-preventing instruction: %s",
                         no_inline_info->name);
-                MVM_free(cuuid_cstr);
                 MVM_free(name_cstr);
             }
         }

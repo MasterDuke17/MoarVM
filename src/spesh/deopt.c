@@ -101,9 +101,9 @@ static void uninline(MVMThreadContext *tc, MVMFrame *f, MVMSpeshCandidate *cand,
             MVM_frame_setup_deopt(tc, uf, usf, ucode);
             uf->caller = caller;
 #if MVM_LOG_DEOPTS
-            fprintf(stderr, "    Recreated frame '%s' (cuid '%s')\n",
+            fprintf(stderr, "    Recreated frame '%s' (cuid '%lu')\n",
                 MVM_string_utf8_encode_C_string(tc, usf->body.name),
-                MVM_string_utf8_encode_C_string(tc, usf->body.cuuid));
+                usf->body.cuuid);
 #endif
 
             /* Copy the locals and lexicals into place. */
@@ -257,9 +257,9 @@ void MVM_spesh_deopt_one(MVMThreadContext *tc, MVMuint32 deopt_idx) {
     if (tc->instance->profiling)
         MVM_profiler_log_deopt_one(tc);
 #if MVM_LOG_DEOPTS
-    fprintf(stderr, "Deopt one requested by interpreter in frame '%s' (cuid '%s')\n",
+    fprintf(stderr, "Deopt one requested by interpreter in frame '%s' (cuid '%lu')\n",
         MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.name),
-        MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.cuuid));
+        tc->cur_frame->static_info->body.cuuid);
 #endif
     assert(f->spesh_cand != NULL);
     assert(deopt_idx < f->spesh_cand->body.num_deopts);
@@ -294,16 +294,16 @@ void MVM_spesh_deopt_one(MVMThreadContext *tc, MVMuint32 deopt_idx) {
         *(tc->interp_cur_op)         = top_frame->static_info->body.bytecode + deopt_target;
         *(tc->interp_bytecode_start) = top_frame->static_info->body.bytecode;
 #if MVM_LOG_DEOPTS
-        fprintf(stderr, "    Completed deopt_one in '%s' (cuid '%s')\n",
+        fprintf(stderr, "    Completed deopt_one in '%s' (cuid '%lu')\n",
             MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.name),
-            MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.cuuid));
+            tc->cur_frame->static_info->body.cuuid);
 #endif
         finish_frame_deopt(tc, f);
     }
     else {
-        MVM_oops(tc, "deopt_one failed for %s (%s)",
+        MVM_oops(tc, "deopt_one failed for %s (%lu)",
             MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.name),
-            MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.cuuid));
+            tc->cur_frame->static_info->body.cuuid);
     }
 
     MVM_CHECK_CALLER_CHAIN(tc, tc->cur_frame);
@@ -316,9 +316,9 @@ void MVM_spesh_deopt_one(MVMThreadContext *tc, MVMuint32 deopt_idx) {
 void MVM_spesh_deopt_all(MVMThreadContext *tc) {
     /* Logging/profiling for global deopt. */
 #if MVM_LOG_DEOPTS
-    fprintf(stderr, "Deopt all requested in frame '%s' (cuid '%s')\n",
+    fprintf(stderr, "Deopt all requested in frame '%s' (cuid '%lu')\n",
         MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.name),
-        MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.cuuid));
+        tc->cur_frame->static_info->body.cuuid);
 #endif
     if (tc->instance->profiling)
         MVM_profiler_log_deopt_all(tc);
@@ -339,9 +339,9 @@ void MVM_spesh_deopt_all(MVMThreadContext *tc) {
                 record->orig_kind = record->kind;
                 record->kind = MVM_CALLSTACK_RECORD_DEOPT_FRAME;
 #if MVM_LOG_DEOPTS
-                fprintf(stderr, "  Marked frame '%s' (cuid '%s') for lazy deopt\n",
+                fprintf(stderr, "  Marked frame '%s' (cuid '%lu') for lazy deopt\n",
                     MVM_string_utf8_encode_C_string(tc, frame->static_info->body.name),
-                    MVM_string_utf8_encode_C_string(tc, frame->static_info->body.cuuid));
+                    frame->static_info->body.cuuid);
 #endif
             }
         }
@@ -398,9 +398,9 @@ void MVM_spesh_deopt_during_unwind(MVMThreadContext *tc) {
     MVMFrame *frame = MVM_callstack_record_to_frame(record);
     MVMSpeshCandidate *spesh_cand = frame->spesh_cand;
 #if MVM_LOG_DEOPTS
-    fprintf(stderr, "Lazy deopt on unwind of frame '%s' (cuid '%s')\n",
+    fprintf(stderr, "Lazy deopt on unwind of frame '%s' (cuid '%lu')\n",
         MVM_string_utf8_encode_C_string(tc, frame->static_info->body.name),
-        MVM_string_utf8_encode_C_string(tc, frame->static_info->body.cuuid));
+        frame->static_info->body.cuuid);
 #endif
 
     /* Find the deopt index, and assuming it's found, deopt. */

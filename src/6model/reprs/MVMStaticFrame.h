@@ -67,7 +67,7 @@ struct MVMStaticFrameBody {
     MVMuint32 num_lexicals;
 
     /* Count of annotations (see further down below */
-    MVMuint32              num_annotations;
+    MVMuint32 num_annotations;
 
     /* Inital contents of the work area, copied into place to make sure we have
      * VMNulls in all the object slots. */
@@ -95,7 +95,7 @@ struct MVMStaticFrameBody {
     MVMuint8 has_exit_handler;
 
     /* The compilation unit unique ID of this frame. */
-    MVMString *cuuid;
+    MVMuint64 cuuid;
 
     /* The name of this frame. */
     MVMString *name;
@@ -107,7 +107,7 @@ struct MVMStaticFrameBody {
     MVMCode *static_code;
 
     /* Annotation details */
-    MVMuint8              *annotations_data;
+    MVMuint8 *annotations_data;
 
     /* The original bytecode for this frame (before endian swapping). */
     MVMuint8 *orig_bytecode;

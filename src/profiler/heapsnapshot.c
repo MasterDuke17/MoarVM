@@ -355,7 +355,7 @@ static void set_type_index(MVMThreadContext *tc, MVMHeapSnapshotState *ss,
 static void set_static_frame_index(MVMThreadContext *tc, MVMHeapSnapshotState *ss,
        MVMHeapSnapshotCollectable *col, MVMStaticFrame *sf) {
     MVMuint64 name_idx = get_vm_string_index(tc, ss, sf->body.name);
-    MVMuint64 cuid_idx = get_vm_string_index(tc, ss, sf->body.cuuid);
+    MVMuint64 cuid_idx = get_vm_string_index(tc, ss, MVM_coerce_i_s(tc, sf->body.cuuid));
 
     MVMCompUnit *cu = sf->body.cu;
     MVMBytecodeAnnotation *ann = MVM_bytecode_resolve_annotation(tc, &(sf->body), 0);

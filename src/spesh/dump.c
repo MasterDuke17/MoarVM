@@ -664,9 +664,7 @@ char * MVM_spesh_dump(MVMThreadContext *tc, MVMSpeshGraph *g) {
     /* Dump name and CUID. */
     append(&ds, "Spesh of '");
     append_str(tc, &ds, g->sf->body.name);
-    append(&ds, "' (cuid: ");
-    append_str(tc, &ds, g->sf->body.cuuid);
-    append(&ds, ", file: ");
+    appendf(&ds, "' (cuid: %lu, file: ", g->sf->body.cuuid);
     dump_fileinfo(tc, &ds, g->sf);
     append(&ds, ")\n");
     if (g->cs)
@@ -709,17 +707,14 @@ char * MVM_spesh_dump(MVMThreadContext *tc, MVMSpeshGraph *g) {
                 if (repr_id == MVM_REPR_ID_MVMStaticFrame || repr_id == MVM_REPR_ID_MVMCode) {
                     MVMStaticFrameBody *body;
                     char *name_str;
-                    char *cuuid_str;
                     if (repr_id == MVM_REPR_ID_MVMCode) {
                         MVMCodeBody *code_body = (MVMCodeBody *)OBJECT_BODY(obj);
                         obj = (MVMObject *)code_body->sf;
                     }
                     body = (MVMStaticFrameBody *)OBJECT_BODY(obj);
                     name_str  = MVM_string_utf8_encode_C_string(tc, body->name);
-                    cuuid_str = MVM_string_utf8_encode_C_string(tc, body->cuuid);
-                    appendf(&ds, " - '%s' (%s)", name_str, cuuid_str);
+                    appendf(&ds, " - '%s' (%lu)", name_str, body->cuuid);
                     MVM_free(name_str);
-                    MVM_free(cuuid_str);
                 }
                 appendf(&ds, "\n");
             }
@@ -796,15 +791,13 @@ static void dump_stats_by_callsite(MVMThreadContext *tc, DumpStr *ds, MVMSpeshSt
                         (oss->types[k].type_concrete ? "Conc" : "TypeObj"));
                 for (k = 0; k < oss->num_invokes; k++) {
                     char *body_name = MVM_string_utf8_encode_C_string(tc, oss->invokes[k].sf->body.name);
-                    char *body_cuuid = MVM_string_utf8_encode_C_string(tc, oss->invokes[k].sf->body.cuuid);
                     appendf(ds,
-                        "                %d x static frame '%s' (%s) (caller is outer: %d)\n",
+                        "                %d x static frame '%s' (%lu) (caller is outer: %d)\n",
                         oss->invokes[k].count,
                         body_name,
-                        body_cuuid,
+                        oss->invokes[k].sf->body.cuuid,
                         oss->invokes[k].caller_is_outer_count);
                     MVM_free(body_name);
-                    MVM_free(body_cuuid);
                 }
                 for (k = 0; k < oss->num_type_tuples; k++) {
                     appendf(ds, "                %d x type tuple:\n",
@@ -835,9 +828,7 @@ char * MVM_spesh_dump_stats(MVMThreadContext *tc, MVMStaticFrame *sf) {
     /* Dump name and CUID. */
     append(&ds, "Latest statistics for '");
     append_str(tc, &ds, sf->body.name);
-    append(&ds, "' (cuid: ");
-    append_str(tc, &ds, sf->body.cuuid);
-    append(&ds, ", file: ");
+    appendf(&ds, "' (cuid: %lu, file: ", sf->body.cuuid);
     dump_fileinfo(tc, &ds, sf);
     append(&ds, ")\n\n");
 
@@ -883,9 +874,7 @@ char * MVM_spesh_dump_planned(MVMThreadContext *tc, MVMSpeshPlanned *p) {
     }
     append(&ds, " specialization of '");
     append_str(tc, &ds, p->sf->body.name);
-    append(&ds, "' (cuid: ");
-    append_str(tc, &ds, p->sf->body.cuuid);
-    append(&ds, ", file: ");
+    appendf(&ds, "' (cuid: %lu, file: ", p->sf->body.cuuid);
     dump_fileinfo(tc, &ds, p->sf);
     append(&ds, ")\n\n");
 
@@ -958,9 +947,7 @@ char * MVM_spesh_dump_arg_guard(MVMThreadContext *tc, MVMStaticFrame *sf, MVMSpe
     if (sf) {
         append(&ds, "Latest guard tree for '");
         append_str(tc, &ds, sf->body.name);
-        append(&ds, "' (cuid: ");
-        append_str(tc, &ds, sf->body.cuuid);
-        append(&ds, ", file: ");
+        appendf(&ds, "' (cuid: %lu, file: ", sf->body.cuuid);
         dump_fileinfo(tc, &ds, sf);
         append(&ds, ")\n\n");
     }

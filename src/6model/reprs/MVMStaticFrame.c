@@ -43,7 +43,6 @@ static void copy_to(MVMThreadContext *tc, MVMSTable *st, void *src, MVMObject *d
     }
 
     MVM_ASSIGN_REF(tc, &(dest_root->header), dest_body->cu, src_body->cu);
-    MVM_ASSIGN_REF(tc, &(dest_root->header), dest_body->cuuid, src_body->cuuid);
     MVM_ASSIGN_REF(tc, &(dest_root->header), dest_body->name, src_body->name);
     MVM_ASSIGN_REF(tc, &(dest_root->header), dest_body->static_code, src_body->static_code);
 
@@ -127,7 +126,6 @@ static void gc_mark(MVMThreadContext *tc, MVMSTable *st, void *data, MVMGCWorkli
 
     /* mvmobjects */
     MVM_gc_worklist_add(tc, worklist, &body->cu);
-    MVM_gc_worklist_add(tc, worklist, &body->cuuid);
     MVM_gc_worklist_add(tc, worklist, &body->name);
     MVM_gc_worklist_add(tc, worklist, &body->outer);
     MVM_gc_worklist_add(tc, worklist, &body->static_code);
@@ -263,20 +261,17 @@ static void describe_refs(MVMThreadContext *tc, MVMHeapSnapshotState *ss, MVMSTa
     static MVMuint64 cache_3 = 0;
     static MVMuint64 cache_4 = 0;
     static MVMuint64 cache_5 = 0;
-    static MVMuint64 cache_6 = 0;
 
     MVMuint64 nonstatic_cache_1 = 0;
 
     MVM_profile_heap_add_collectable_rel_const_cstr_cached(tc, ss,
         (MVMCollectable *)body->cu, "Compilation Unit", &cache_1);
     MVM_profile_heap_add_collectable_rel_const_cstr_cached(tc, ss,
-        (MVMCollectable *)body->cuuid, "Compilation Unit Unique ID", &cache_2);
+        (MVMCollectable *)body->name, "Name", &cache_2);
     MVM_profile_heap_add_collectable_rel_const_cstr_cached(tc, ss,
-        (MVMCollectable *)body->name, "Name", &cache_3);
+        (MVMCollectable *)body->outer, "Outer static frame", &cache_3);
     MVM_profile_heap_add_collectable_rel_const_cstr_cached(tc, ss,
-        (MVMCollectable *)body->outer, "Outer static frame", &cache_4);
-    MVM_profile_heap_add_collectable_rel_const_cstr_cached(tc, ss,
-        (MVMCollectable *)body->static_code, "Static code object", &cache_5);
+        (MVMCollectable *)body->static_code, "Static code object", &cache_4);
 
     /* If it's not fully deserialized, none of the following can apply. */
     if (!body->fully_deserialized)
@@ -299,12 +294,12 @@ static void describe_refs(MVMThreadContext *tc, MVMHeapSnapshotState *ss, MVMSTa
         for (i = 0; i < count; i++)
             if (type_map[i] == MVM_reg_str || type_map[i] == MVM_reg_obj)
                 MVM_profile_heap_add_collectable_rel_const_cstr_cached(tc, ss,
-                    (MVMCollectable *)body->static_env[i].o, "Static Environment Entry", &cache_6);
+                    (MVMCollectable *)body->static_env[i].o, "Static Environment Entry", &cache_5);
     }
 
     /* Spesh data */
     MVM_profile_heap_add_collectable_rel_const_cstr_cached(tc, ss,
-        (MVMCollectable *)body->spesh, "Specializer Data", &cache_6);
+        (MVMCollectable *)body->spesh, "Specializer Data", &cache_5);
 }
 
 /* Initializes the representation. */

@@ -727,10 +727,8 @@ void MVM_spesh_pea(MVMThreadContext *tc, MVMSpeshGraph *g) {
 
     if (PEA_LOG) {
         char *sf_name = MVM_string_utf8_encode_C_string(tc, g->sf->body.name);
-        char *sf_cuuid = MVM_string_utf8_encode_C_string(tc, g->sf->body.cuuid);
-        pea_log("considering frame '%s' (%s)", sf_name, sf_cuuid);
+        pea_log("considering frame '%s' (%lu)", sf_name, g->sf->body.cuuid);
         MVM_free(sf_name);
-        MVM_free(sf_cuuid);
     }
 
     if (analyze(tc, g, &gs)) {

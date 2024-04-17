@@ -2786,7 +2786,7 @@ void MVM_interp_run(MVMThreadContext *tc, void (*initial_invoke)(MVMThreadContex
                 CHECK_CONC(cr);
                 if (REPR(cr)->ID != MVM_REPR_ID_MVMCode || !IS_CONCRETE(cr))
                     MVM_exception_throw_adhoc(tc, "getcodecuid requires a static coderef");
-                GET_REG(cur_op, 0).s = ((MVMCode *)cr)->body.sf->body.cuuid;
+                GET_REG(cur_op, 0).s = MVM_coerce_i_s(tc, ((MVMCode *)cr)->body.sf->body.cuuid);
                 cur_op += 4;
                 goto NEXT;
             }

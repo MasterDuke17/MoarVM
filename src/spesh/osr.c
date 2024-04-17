@@ -26,25 +26,25 @@ static void perform_osr(MVMThreadContext *tc, MVMSpeshCandidate *specialized) {
         if (!MVM_callstack_ensure_work_and_env_space(tc, specialized->body.work_size,
                     specialized->body.env_size)) {
 #if MVM_LOG_OSR
-            fprintf(stderr, "Failed OSR as cannot grow work/env area for frame '%s' (cuid: %s)\n",
+            fprintf(stderr, "Failed OSR as cannot grow work/env area for frame '%s' (cuid: %lu)\n",
                 MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.name),
-                MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.cuuid));
+                tc->cur_frame->static_info->body.cuuid);
 #endif
             return;
         }
 #if MVM_LOG_OSR
-        fprintf(stderr, "OSR obtained larger work area for frame '%s' (cuid: %s)\n",
+        fprintf(stderr, "OSR obtained larger work area for frame '%s' (cuid: %lu)\n",
             MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.name),
-            MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.cuuid));
+            tc->cur_frame->static_info->body.cuuid);
 #endif
     }
 
     /* Work out the OSR deopt index, to locate the entry point. */
     MVMint32 osr_index = get_osr_deopt_index(tc, specialized);
 #if MVM_LOG_OSR
-    fprintf(stderr, "Performing OSR of frame '%s' (cuid: %s) at index %d\n",
+    fprintf(stderr, "Performing OSR of frame '%s' (cuid: %lu) at index %d\n",
         MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.name),
-        MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.cuuid),
+        tc->cur_frame->static_info->body.cuuid;
         osr_index);
 #endif
 
@@ -110,17 +110,17 @@ void MVM_spesh_osr_poll_for_result(MVMThreadContext *tc) {
                 }
                 else {
 #if MVM_LOG_OSR
-                fprintf(stderr, "Considered OSR but arg guard failed in '%s' (cuid: %s)\n",
+                fprintf(stderr, "Considered OSR but arg guard failed in '%s' (cuid: %lu)\n",
                     MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.name),
-                    MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.cuuid));
+                    tc->cur_frame->static_info->body.cuuid);
 #endif
                 }
             }
             else {
 #if MVM_LOG_OSR
-                fprintf(stderr, "Unable to perform OSR due to caller info '%s' (cuid: %s)\n",
+                fprintf(stderr, "Unable to perform OSR due to caller info '%s' (cuid: %lu)\n",
                     MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.name),
-                    MVM_string_utf8_encode_C_string(tc, tc->cur_frame->static_info->body.cuuid));
+                    tc->cur_frame->static_info->body.cuuid);
 #endif
             }
         }

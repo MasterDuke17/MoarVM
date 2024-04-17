@@ -2420,11 +2420,11 @@ static void dump_p6opaque(MVMThreadContext *tc, MVMObject *obj, int nested) {
                                 MVMStaticFrame *sf = code->body.sf;
                                 fprintf(
                                     stderr,
-                                    "=%p %s (%s/cuuid %s)",
+                                    "=%p %s (%s/cuuid %lu)",
                                     code,
                                     code->body.name ? MVM_string_utf8_maybe_encode_C_string(tc, code->body.name) : "<null>",
                                     sf->body.name   ? MVM_string_utf8_maybe_encode_C_string(tc, sf->body.name)   : "<null>",
-                                    sf->body.cuuid  ? MVM_string_utf8_maybe_encode_C_string(tc, sf->body.cuuid)  : "<null>"
+                                    sf->body.cuuid
                                 );
                             }
                         }

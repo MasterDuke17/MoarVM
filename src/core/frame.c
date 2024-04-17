@@ -402,18 +402,12 @@ static void setup_state_vars(MVMThreadContext *tc, MVMStaticFrame *static_frame)
 /* Produces an error on outer frame mis-match. */
 static void report_outer_conflict(MVMThreadContext *tc, MVMStaticFrame *static_frame,
         MVMFrame *outer) {
-    char *frame_cuuid = MVM_string_utf8_encode_C_string(tc, static_frame->body.cuuid);
     char *frame_name;
-    char *outer_cuuid = MVM_string_utf8_encode_C_string(tc, outer->static_info->body.cuuid);
     char *outer_name;
-    char *frame_outer_cuuid = MVM_string_utf8_encode_C_string(tc,
-            static_frame->body.outer
-                ? static_frame->body.outer->body.cuuid
-                : tc->instance->str_consts.empty);
     char *frame_outer_name;
 
-    char *waste[7] = { frame_cuuid, outer_cuuid, frame_outer_cuuid, NULL, NULL, NULL, NULL };
-    int waste_counter = 3;
+    char *waste[4] = { NULL, NULL, NULL, NULL };
+    int waste_counter = 0;
 
     if (static_frame->body.name) {
         frame_name = MVM_string_utf8_encode_C_string(tc, static_frame->body.name);
@@ -440,14 +434,14 @@ static void report_outer_conflict(MVMThreadContext *tc, MVMStaticFrame *static_f
     }
 
     MVM_exception_throw_adhoc_free(tc, waste,
-        "When invoking %s '%s', provided outer frame %p (%s '%s') does not match expected static frame %p (%s '%s')",
-        frame_cuuid,
+        "When invoking %lu '%s', provided outer frame %p (%lu '%s') does not match expected static frame %p (%lu '%s')",
+        static_frame->body.cuuid,
         frame_name,
         outer->static_info,
-        outer_cuuid,
+        outer->static_info->body.cuuid,
         outer_name,
         static_frame->body.outer,
-        frame_outer_cuuid,
+        static_frame->body.outer ? static_frame->body.outer->body.cuuid : 0,
         frame_outer_name);
 }
 
@@ -478,9 +472,9 @@ void MVM_frame_dispatch(MVMThreadContext *tc, MVMCode *code, MVMArgs args, MVMin
         MVMint32 correct = MVM_spesh_arg_guard_run(tc, spesh->body.spesh_arg_guard,
             args, &certain);
         if (spesh_cand != correct && spesh_cand != certain) {
-            fprintf(stderr, "Inconsistent spesh preselection of '%s' (%s): got %d, not %d\n",
+            fprintf(stderr, "Inconsistent spesh preselection of '%s' (%lu): got %d, not %d\n",
                 MVM_string_utf8_encode_C_string(tc, static_frame->body.name),
-                MVM_string_utf8_encode_C_string(tc, static_frame->body.cuuid),
+                static_frame->body.cuuid,
                 spesh_cand, correct);
             MVM_dump_backtrace(tc);
         }

@@ -218,17 +218,15 @@ void MVM_spesh_candidate_add(MVMThreadContext *tc, MVMSpeshPlanned *p) {
     sg = MVM_spesh_graph_create(tc, p->sf, 0, 1);
     if (MVM_spesh_debug_enabled(tc)) {
         char *c_name = MVM_string_utf8_encode_C_string(tc, p->sf->body.name);
-        char *c_cuid = MVM_string_utf8_encode_C_string(tc, p->sf->body.cuuid);
         MVMSpeshFacts **facts = sg->facts;
         char *before;
         sg->facts = NULL;
         before = MVM_spesh_dump(tc, sg);
         sg->facts = facts;
         MVM_spesh_debug_printf(tc,
-            "Specialization of '%s' (cuid: %s)\n\n", c_name, c_cuid);
+            "Specialization of '%s' (cuid: %lu)\n\n", c_name, p->sf->body.cuuid);
         MVM_spesh_debug_printf(tc, "Before:\n%s", before);
         MVM_free(c_name);
-        MVM_free(c_cuid);
         MVM_free(before);
         fflush(tc->instance->spesh_log_fh);
         start_time = uv_hrtime();
