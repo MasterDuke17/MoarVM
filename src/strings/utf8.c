@@ -1,4 +1,5 @@
 #include "moar.h"
+#include "MVMsimdutf.h"
 
 /* The below section has an MIT-style license, included here.
 
@@ -59,6 +60,13 @@ decode_utf8_byte(MVMint32 *state, MVMGrapheme32 *codep, MVMuint8 byte) {
 
   *state = utf8d[256 + *state + type];
   return *state;
+}
+
+MVM_STATIC_INLINE MVMint32
+decode_utf8_byte_nocheck(MVMuint8 byte) {
+  const MVMint32 type = utf8d[byte];
+
+  return (0xff >> type) & (byte);
 }
 /* end Bjoern Hoehrmann section (some things were changed from the original) */
 
@@ -191,6 +199,23 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
     orig_bytes = bytes;
     orig_utf8 = utf8;
 
+    if (MVM_string_is_valid_utf8(utf8, bytes)) {
+        for (; bytes; ++utf8, --bytes) {
+            MVMGrapheme32 g;
+            ready = MVM_unicode_normalizer_process_codepoint_to_grapheme(tc, &norm, decode_utf8_byte_nocheck((MVMuint8)*utf8), &g);
+            if (ready) {
+                while (count + ready > bufsize) { /* if the buffer's full make a bigger one */
+                    buffer = MVM_realloc(buffer, sizeof(MVMGrapheme32) * (
+                        bufsize >= UTF8_MAXINC ? (bufsize += UTF8_MAXINC) : (bufsize *= 2)
+                    ));
+                }
+                buffer[count++] = g;
+                while (--ready > 0) {
+                    buffer[count++] = MVM_unicode_normalizer_get_grapheme(tc, &norm);
+                }
+            }
+        }
+    } else {
     for (; bytes; ++utf8, --bytes) {
         switch(MVM_EXPECT(decode_utf8_byte(&state, &codepoint, (MVMuint8)*utf8), UTF8_ACCEPT)) {
         case UTF8_ACCEPT: { /* got a codepoint */
@@ -268,6 +293,7 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
         MVM_unicode_normalizer_cleanup(tc, &norm);
         MVM_free(buffer);
         MVM_exception_throw_adhoc(tc, "Malformed termination of UTF-8 string");
+    }
     }
 
     /* Get any final graphemes from the normalizer, and clean it up. */
