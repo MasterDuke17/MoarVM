@@ -269,7 +269,8 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
     orig_bytes = bytes;
     orig_utf8 = utf8;
 
-    if (MVM_string_is_valid_utf8(utf8, bytes)) {
+    fprintf(stderr, "bytes = %lu, num chars = %lu, num bytes = %lu", bytes, MVM_string_utf8_count(utf8, bytes), MVM_string_utf8_length_from_latin1(utf8, bytes));
+    if (0 && MVM_string_is_valid_utf8(utf8, bytes)) {
         for (; bytes; ++utf8, --bytes) {
             MVMGrapheme32 g;
             ready = MVM_unicode_normalizer_process_codepoint_to_grapheme(tc, &norm, decode_utf8_byte_nocheck((MVMuint8)*utf8), &g);
@@ -344,6 +345,7 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
         MVM_gc_mark_thread_blocked(tc);
     }
 
+    fprintf(stderr, ", final count = %lu\n", count);
     /* If we're lucky, we can fit our string in 8 bits per grapheme. */
     if (MVM_string_buf32_can_fit_into_8bit(buffer, count)) {
         MVMGrapheme8 *storage;
