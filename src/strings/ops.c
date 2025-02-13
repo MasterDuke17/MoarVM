@@ -2913,15 +2913,24 @@ MVMint64 MVM_string_find_cclass(MVMThreadContext *tc, MVMint64 cclass, MVMString
                             return pos;
                     }
                     break;
-                case MVM_CCLASS_NEWLINE:
-                    for (pos = offset; pos < end; pos++) {
+                case MVM_CCLASS_NEWLINE: {
+                    MVMGrapheme32 lf = '\n';
+                    /* Do a quick-and-dirty search for '\n', because that's probably the most common newline.
+		     * If that succeeds, use that index as the limit for the full-featured search. */
+                    MVMint64 lf_p = MVM_string_memmem_grapheme32(tc, s->body.storage.blob_32, &lf, offset, count, 1);
+                    if (lf_p == -1)
+                        lf_p = end;
+                    for (pos = offset; pos < lf_p; pos++) {
                         MVMGrapheme32 g = (MVMGrapheme32)s->body.storage.blob_32[pos];
                         MVMCodepoint cp = 0 <= g ? g : MVM_nfg_get_synthetic_info(tc, g)->codes[0];
                         if (cp == '\n' || cp == 0x0b || cp == 0x0c || cp == '\r' ||
                             cp == 0x85 || MVM_CP_is_gencat_name_Zl(cp) || MVM_CP_is_gencat_name_Zp(cp))
                             return pos;
                     }
+                    if (lf_p != end)
+                        return lf_p;
                     break;
+                }
                 default:
                     for (pos = offset; pos < end; pos++) {
                         MVMGrapheme32 g = (MVMGrapheme32)s->body.storage.blob_32[pos];
