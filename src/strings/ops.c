@@ -2915,20 +2915,51 @@ MVMint64 MVM_string_find_cclass(MVMThreadContext *tc, MVMint64 cclass, MVMString
                     break;
                 case MVM_CCLASS_NEWLINE: {
                     MVMGrapheme32 lf = '\n';
-                    /* Do a quick-and-dirty search for '\n', because that's probably the most common newline.
-		     * If that succeeds, use that index as the limit for the full-featured search. */
-                    MVMint64 lf_p = MVM_string_memmem_grapheme32(tc, s->body.storage.blob_32, &lf, offset, count, 1);
+                    MVMint64 lf_p = MVM_string_memmem_grapheme32(tc, s->body.storage.blob_32, &lf, offset, end, 1);
                     if (lf_p == -1)
                         lf_p = end;
-                    for (pos = offset; pos < lf_p; pos++) {
+
+                    MVMGrapheme32 b = 0x0b;
+                    MVMint64 b_p = MVM_string_memmem_grapheme32(tc, s->body.storage.blob_32, &b, offset, lf_p, 1);
+                    if (b_p == -1)
+                        b_p = lf_p;
+
+                    MVMGrapheme32 c = 0x0c;
+                    MVMint64 c_p = MVM_string_memmem_grapheme32(tc, s->body.storage.blob_32, &c, offset, b_p, 1);
+                    if (c_p == -1)
+                        c_p = b_p;
+
+                    MVMGrapheme32 cr = '\r';
+                    MVMint64 cr_p = MVM_string_memmem_grapheme32(tc, s->body.storage.blob_32, &cr, offset, c_p, 1);
+                    if (cr_p == -1)
+                        cr_p = c_p;
+
+                    MVMGrapheme32 eightyfive = 0x85;
+                    MVMint64 eightyfive_p = MVM_string_memmem_grapheme32(tc, s->body.storage.blob_32, &eightyfive, offset, cr_p, 1);
+                    if (eightyfive_p == -1)
+                        eightyfive_p = cr_p;
+
+                    MVMGrapheme32 Zl = 8232;
+                    MVMint64 Zl_p = MVM_string_memmem_grapheme32(tc, s->body.storage.blob_32, &Zl, offset, eightyfive_p, 1);
+                    if (Zl_p == -1)
+                        Zl_p = eightyfive_p;
+
+                    MVMGrapheme32 Zp = 8233;
+                    MVMint64 Zp_p = MVM_string_memmem_grapheme32(tc, s->body.storage.blob_32, &Zp, offset, Zl_p, 1);
+                    if (Zp_p == -1)
+                        Zp_p = Zl_p;
+
+                    for (pos = offset; pos < Zp_p; pos++) {
                         MVMGrapheme32 g = (MVMGrapheme32)s->body.storage.blob_32[pos];
-                        MVMCodepoint cp = 0 <= g ? g : MVM_nfg_get_synthetic_info(tc, g)->codes[0];
-                        if (cp == '\n' || cp == 0x0b || cp == 0x0c || cp == '\r' ||
-                            cp == 0x85 || MVM_CP_is_gencat_name_Zl(cp) || MVM_CP_is_gencat_name_Zp(cp))
-                            return pos;
+                        if (g < 0) {
+                            MVMCodepoint cp = MVM_nfg_get_synthetic_info(tc, g)->codes[0];
+                            if (cp == '\n' || cp == 0x0b || cp == 0x0c || cp == '\r' ||
+                                cp == 0x85 || MVM_CP_is_gencat_name_Zl(cp) || MVM_CP_is_gencat_name_Zp(cp)) {
+                                return pos;}
+                        }
                     }
-                    if (lf_p != end)
-                        return lf_p;
+                    if (Zp_p != end)
+                        return Zp_p;
                     break;
                 }
                 default:
