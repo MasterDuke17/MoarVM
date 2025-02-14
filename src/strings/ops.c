@@ -2918,7 +2918,6 @@ MVMint64 MVM_string_find_cclass(MVMThreadContext *tc, MVMint64 cclass, MVMString
                     MVMint64 synth = 0;
                     for (pos = offset; pos < end; pos++) {
                         MVMGrapheme32 g = (MVMGrapheme32)s->body.storage.blob_32[pos];
-                        synth += g < 0;
                         if (g >= 0) {
                             MVMCodepoint cp = g;
                             if (cp == '\n' || cp == 0x0b || cp == 0x0c || cp == '\r' ||
@@ -2926,6 +2925,9 @@ MVMint64 MVM_string_find_cclass(MVMThreadContext *tc, MVMint64 cclass, MVMString
                                 found = pos;
                                 break;
                             }
+                        }
+                        else {
+                            synth = 1;
                         }
                     }
                     if (synth) {
