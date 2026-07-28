@@ -45,6 +45,8 @@ CINCLUDES = @moar_cincludes@ \
             @ccincsystem@3rdparty/dynasm \
             @ccincsystem@3rdparty/cmp \
             @ccincsystem@3rdparty \
+            @ccincsystem@3rdparty/simdutf/include \
+            @ccincsystem@3rdparty/simdutf/src \
             @cincludes@ \
             @ccinc@src
 LDFLAGS   = @ldflags@
@@ -239,6 +241,7 @@ OBJECTS2 = src/6model/reprs/MVMDLLSym@obj@ \
           src/strings/shiftjis@obj@ \
           src/strings/gb2312@obj@ \
           src/strings/gb18030@obj@ \
+          src/strings/MVMsimdutf@obj@ \
           src/math/bigintops@obj@ \
           src/profiler/instrument@obj@ \
           src/profiler/log@obj@ \
@@ -427,6 +430,7 @@ HEADERS = src/moar.h \
           src/strings/gb2312_codeindex.h \
           src/strings/gb18030.h \
           src/strings/gb18030_codeindex.h \
+          src/strings/MVMsimdutf.h \
           src/math/bigintops.h \
           src/profiler/instrument.h \
           src/profiler/log.h \
