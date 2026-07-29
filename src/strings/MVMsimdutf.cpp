@@ -16,3 +16,6 @@ int MVM_string_utf8_length_from_latin1(const char* str, size_t len) {
 int MVM_string_convert_latin1_to_utf8(const char* input, size_t len, char *output) {
   return simdutf::convert_latin1_to_utf8(input, len, output);
 }
+int MVM_string_convert_utf8_to_latin1(const char* input, size_t len, char *output) {
+  return simdutf::convert_utf8_to_latin1(input, len, output);
+}

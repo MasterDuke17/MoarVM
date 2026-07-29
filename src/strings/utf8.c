@@ -249,7 +249,10 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
     MVMCodepoint codepoint;
     MVMint32 state = 0;
     MVMint32 bufsize = bytes;
-    MVMGrapheme32 *buffer = MVM_malloc(sizeof(MVMGrapheme32) * bufsize);
+    MVMGrapheme32 *buffer = NULL;
+    MVMint32 simd_bufsize = MVM_string_utf8_length_from_latin1(utf8, bytes);
+    static char simd_buffer[1024];
+    MVMint32 did_simd = 0;
     size_t orig_bytes = bytes;
     const char *orig_utf8 = utf8;
     MVMint32 ready;
@@ -265,31 +268,19 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
         did_mark_thread_blocked = 1;
     }
 
+    //fprintf(stderr, "bytes = %lu, num chars = %lu, num bytes = %lu", bytes, MVM_string_utf8_count(utf8, bytes), simd_bufsize);
+    if (simd_bufsize < sizeof(simd_buffer) && MVM_string_convert_utf8_to_latin1(utf8, simd_bufsize, simd_buffer) != 0) {
+        did_simd = 1;
+        count = simd_bufsize;
+    } else {
     /* Need to normalize to NFG as we decode. */
+    buffer = MVM_malloc(sizeof(MVMGrapheme32) * bufsize);
     MVMNormalizer norm;
     MVM_unicode_normalizer_init(tc, &norm, MVM_NORMALIZE_NFG);
 
     orig_bytes = bytes;
     orig_utf8 = utf8;
 
-    fprintf(stderr, "bytes = %lu, num chars = %lu, num bytes = %lu", bytes, MVM_string_utf8_count(utf8, bytes), MVM_string_utf8_length_from_latin1(utf8, bytes));
-    if (0 && MVM_string_is_valid_utf8(utf8, bytes)) {
-        for (; bytes; ++utf8, --bytes) {
-            MVMGrapheme32 g;
-            ready = MVM_unicode_normalizer_process_codepoint_to_grapheme(tc, &norm, decode_utf8_byte_nocheck((MVMuint8)*utf8), &g);
-            if (ready) {
-                while (count + ready > bufsize) { /* if the buffer's full make a bigger one */
-                    buffer = MVM_realloc(buffer, sizeof(MVMGrapheme32) * (
-                        bufsize >= UTF8_MAXINC ? (bufsize += UTF8_MAXINC) : (bufsize *= 2)
-                    ));
-                }
-                buffer[count++] = g;
-                while (--ready > 0) {
-                    buffer[count++] = MVM_unicode_normalizer_get_grapheme(tc, &norm);
-                }
-            }
-        }
-    } else {
     for (; bytes; ++utf8, --bytes) {
         switch(MVM_EXPECT(decode_utf8_byte(&state, &codepoint, (MVMuint8)*utf8), UTF8_ACCEPT)) {
         case UTF8_ACCEPT: { /* got a codepoint */
@@ -321,7 +312,6 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
             MVM_gc_mark_thread_unblocked(tc);
         MVM_exception_throw_adhoc(tc, "Malformed termination of UTF-8 string");
     }
-    }
 
     /* Get any final graphemes from the normalizer, and clean it up. */
     MVM_unicode_normalizer_eof(tc, &norm);
@@ -332,6 +322,7 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
         }
     }
     MVM_unicode_normalizer_cleanup(tc, &norm);
+    }
 
     if (did_mark_thread_blocked) {
         /* Cannot allocate on a blocked thread. */
@@ -348,9 +339,8 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
         MVM_gc_mark_thread_blocked(tc);
     }
 
-    fprintf(stderr, ", final count = %lu\n", count);
     /* If we're lucky, we can fit our string in 8 bits per grapheme. */
-    if (MVM_string_buf32_can_fit_into_8bit(buffer, count)) {
+    if (did_simd || MVM_string_buf32_can_fit_into_8bit(buffer, count)) {
         MVMGrapheme8 *storage;
         if (count <= 8) {
             storage = result->body.storage.in_situ_8;
@@ -359,11 +349,19 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
             storage = result->body.storage.blob_8 = MVM_malloc(sizeof(MVMGrapheme8) * count);
             result->body.storage_type    = MVM_STRING_GRAPHEME_8;
         }
+        if (did_simd) {
+        MVM_VECTORIZE_LOOP
+        for (ready = 0; ready < count; ready++) {
+            storage[ready] = simd_buffer[ready];
+        }
+        }
+        else {
         MVM_VECTORIZE_LOOP
         for (ready = 0; ready < count; ready++) {
             storage[ready] = buffer[ready];
         }
         MVM_free(buffer);
+        }
     } else {
         /* just keep the same buffer as the MVMString's buffer.  Later
          * we can add heuristics to resize it if we have enough free
@@ -384,6 +382,7 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
         MVM_gc_root_temp_pop(tc);
     }
 
+    //fprintf(stderr, ", final count = %lu, simd = '%s', MVM = '%s'\n", count, simd_buffer, MVM_string_utf8_encode_C_string(tc, result));
     return result;
 }
 
