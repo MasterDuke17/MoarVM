@@ -249,9 +249,8 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
     MVMCodepoint codepoint;
     MVMint32 state = 0;
     MVMint32 bufsize = bytes;
-    MVMGrapheme32 *buffer = NULL;
+    MVMGrapheme32 *buffer = MVM_malloc(sizeof(MVMGrapheme32) * bufsize);
     MVMint32 simd_bufsize = MVM_string_utf8_length_from_latin1(utf8, bytes);
-    static char simd_buffer[1024];
     MVMint32 did_simd = 0;
     size_t orig_bytes = bytes;
     const char *orig_utf8 = utf8;
@@ -268,13 +267,12 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
         did_mark_thread_blocked = 1;
     }
 
-    //fprintf(stderr, "bytes = %lu, num chars = %lu, num bytes = %lu", bytes, MVM_string_utf8_count(utf8, bytes), simd_bufsize);
-    if (simd_bufsize < sizeof(simd_buffer) && MVM_string_convert_utf8_to_latin1(utf8, simd_bufsize, simd_buffer) != 0) {
+    if (MVM_string_convert_utf8_to_latin1(utf8, simd_bufsize, (char *)buffer) != 0) {
         did_simd = 1;
         count = simd_bufsize;
+    //fprintf(stderr, "did simd: bytes = %lu, num chars = %lu, num bytes = %lu\n", bytes, MVM_string_utf8_count(utf8, bytes), simd_bufsize);
     } else {
     /* Need to normalize to NFG as we decode. */
-    buffer = MVM_malloc(sizeof(MVMGrapheme32) * bufsize);
     MVMNormalizer norm;
     MVM_unicode_normalizer_init(tc, &norm, MVM_NORMALIZE_NFG);
 
@@ -352,7 +350,7 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
         if (did_simd) {
         MVM_VECTORIZE_LOOP
         for (ready = 0; ready < count; ready++) {
-            storage[ready] = simd_buffer[ready];
+            storage[ready] = ((char *)buffer)[ready];
         }
         }
         else {
@@ -382,6 +380,8 @@ MVMString * MVM_string_utf8_decode(MVMThreadContext *tc, const MVMObject *result
         MVM_gc_root_temp_pop(tc);
     }
 
+    //if (!did_simd)
+    //fprintf(stderr, "could not simd: bytes = %lu, num chars = %lu, num bytes = %lu, ('%s')\n", bytes, MVM_string_utf8_count(utf8, bytes), simd_bufsize, MVM_string_utf8_encode_C_string(tc, result));
     //fprintf(stderr, ", final count = %lu, simd = '%s', MVM = '%s'\n", count, simd_buffer, MVM_string_utf8_encode_C_string(tc, result));
     return result;
 }
