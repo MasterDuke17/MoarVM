@@ -212,7 +212,21 @@ static void finish_gc(MVMThreadContext *tc, MVMuint8 gen, MVMuint8 is_coordinato
     for (i = 0; i < tc->gc_work_count; i++) {
         MVMThreadContext *other = tc->gc_work[i].tc;
         MVMThread *thread_obj = other->thread_obj;
-        if (MVM_load(&thread_obj->body.stage) == MVM_thread_stage_clearing_nursery) {
+        int destroying = MVM_load(&thread_obj->body.stage) == MVM_thread_stage_clearing_nursery;
+
+        /* Free gen2 unmarked if full collection. A thread being destroyed is
+         * swept too, before its gen2 is transferred */
+        if (gen == MVMGCGenerations_Both) {
+            GCDEBUG_LOG(tc, MVM_GC_DEBUG_ORCHESTRATE,
+                "Thread %d run %d : freeing gen2 of thread %d%s\n",
+                other->thread_id, destroying ? " before transfer" : "");
+            MVM_gc_collect_free_gen2_unmarked(tc, other, 0);
+            /* Tell malloc implementation to free empty pages to kernel.
+             * Currently only activated for Linux. */
+            MVM_malloc_trim();
+        }
+
+        if (destroying) {
             GCDEBUG_LOG(tc, MVM_GC_DEBUG_ORCHESTRATE,
                 "Thread %d run %d : transferring gen2 of thread %d\n", other->thread_id);
             MVM_gc_gen2_transfer(other, tc);
@@ -223,17 +237,6 @@ static void finish_gc(MVMThreadContext *tc, MVMuint8 gen, MVMuint8 is_coordinato
             MVM_store(&thread_obj->body.stage, MVM_thread_stage_destroyed);
         }
         else {
-            /* Free gen2 unmarked if full collection. */
-            if (gen == MVMGCGenerations_Both) {
-                GCDEBUG_LOG(tc, MVM_GC_DEBUG_ORCHESTRATE,
-                    "Thread %d run %d : freeing gen2 of thread %d\n",
-                    other->thread_id);
-                MVM_gc_collect_free_gen2_unmarked(tc, other, 0);
-                /* Tell malloc implementation to free empty pages to kernel.
-                 * Currently only activated for Linux. */
-                MVM_malloc_trim();
-            }
-
             /* Contribute this thread's promoted bytes. */
             MVM_add(&tc->instance->gc_promoted_bytes_since_last_full, other->gc_promoted_bytes);
 
